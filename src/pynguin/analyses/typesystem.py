@@ -88,6 +88,18 @@ class ProperType(ABC):
     def __lt__(self, other):
         return str(self) < str(other)
 
+class TensorType(ProperType):
+    """Represents a Tensor type."""
+
+    def accept(self, visitor: TypeVisitor[T]) -> T:  # noqa: D102
+        return visitor.visit_tensor_type(self)
+
+    def __hash__(self):
+        return hash(TensorType)
+
+    def __eq__(self, other):
+        return isinstance(other, TensorType)
+
 
 class AnyType(ProperType):
     """The Any Type."""
