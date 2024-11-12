@@ -227,7 +227,7 @@ def is_assertable(obj: Any, recursion_depth: int = 0) -> bool:
         return False
 
     tp_ = type(obj)
-    if is_enum(tp_) or is_primitive_type(tp_) or is_none_type(tp_):
+    if is_enum(tp_) or is_primitive_type(tp_) or is_none_type(tp_) or is_tensor_type(tp_):
         return True
     if is_set(tp_) or is_list(tp_) or is_tuple(tp_):
         return all(is_assertable(elem, recursion_depth + 1) for elem in obj)
