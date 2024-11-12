@@ -6,6 +6,7 @@
 #
 """Provides utilities when working with types."""
 from __future__ import annotations
+from pynguin.analyses.typesystem import TensorType
 
 import enum
 import inspect
@@ -28,7 +29,17 @@ PRIMITIVES = OrderedSet([int, str, bytes, bool, float, complex])
 COLLECTIONS = OrderedSet([list, set, tuple, dict])
 IGNORABLE_TYPES = OrderedSet(["builtins.generator", "builtins.async_generator"])
 
+def is_tensor_type(typ: type | None) -> bool:
+    """Check if the given type is a TensorType.
 
+    Args:
+        typ: a given type
+
+    Returns:
+        Whether the type is a TensorType
+    """
+    return isinstance(typ, TensorType)
+    
 def is_primitive_type(typ: type | None) -> bool:
     """Check if the given type is a primitive.
 
