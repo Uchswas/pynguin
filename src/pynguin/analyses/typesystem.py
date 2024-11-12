@@ -1722,6 +1722,9 @@ class TypeSystem:  # noqa: PLR0904
             #  Hardcoded support generic dict, list and set.
             return self._fixup_known_generics(result)
 
+        if hint.__module__ == "torch" and hint.__name__ == "Tensor":
+            return TensorType()
+
         if isinstance(hint, type):
             # `int` or `str` or `MyClass`
             return self._fixup_known_generics(Instance(self.to_type_info(hint)))
