@@ -19,6 +19,8 @@ import json
 import logging
 import queue
 import typing
+from torch import Tensor
+
 
 from collections import defaultdict
 from pathlib import Path
@@ -566,7 +568,10 @@ class ModuleTestCluster(TestCluster):  # noqa: PLR0904
             defaultdict(OrderedSet)
         )
 
-        # Modifier belong to a certain class, not type.
+        # 添加对 Tensor 类型的生成器支持
+        self.__generators[Tensor] = OrderedSet()  # 初始化一个 Tensor 的生成器集合
+
+        # 继续初始化其他属性
         self.__modifiers: dict[TypeInfo, OrderedSet[GenericAccessibleObject]] = (
             defaultdict(OrderedSet)
         )
