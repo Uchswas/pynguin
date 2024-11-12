@@ -810,9 +810,17 @@ class ModuleTestCluster(TestCluster):  # noqa: PLR0904
 
     def select_concrete_type(self, typ: ProperType) -> ProperType:  # noqa: D102
         if isinstance(typ, AnyType):
+            # 随机选择一个可生成的类型
             typ = randomness.choice(self.get_all_generatable_types())
-        if isinstance(typ, UnionType):
+        
+        elif isinstance(typ, UnionType):
+            # 递归选择 UnionType 的具体类型
             typ = self.select_concrete_type(randomness.choice(typ.items))
+        
+        # 如果传入的类型是 Tensor，则直接返回 Tensor 作为具体类型
+        elif typ == Tensor:
+            return Tensor
+    
         return typ
 
     def track_statistics_values(  # noqa: D102
