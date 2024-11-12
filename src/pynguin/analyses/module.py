@@ -672,13 +672,19 @@ class ModuleTestCluster(TestCluster):  # noqa: PLR0904
     def add_generator(self, generator: GenericAccessibleObject) -> None:  # noqa: D102
         if isinstance(generator, GenericCallableAccessibleObject):
             self.__callables.add(generator)
-
+    
         generated_type = generator.generated_type()
-        if isinstance(generated_type, NoneType) or generated_type.accept(
-            is_primitive_type
-        ):
+        
+        # 检查生成的类型是否是 Tensor 类型，如果是，将其添加到 Tensor 的生成器集合中
+        if generated_type == Tensor:
+            self.__generators[Tensor].add(generator)
+        elif isinstance(generated_type, NoneType) or generated_type.accept(is_primitive_type):
+            # 如果是 NoneType 或者是基础类型，则直接返回
             return
-        self.__generators[generated_type].add(generator)
+        else:
+            # 其他类型使用默认的生成器逻辑
+            self.__generators[generated_type].add(generator)
+
 
     def add_accessible_object_under_test(  # noqa: D102
         self, objc: GenericAccessibleObject, data: _CallableData
