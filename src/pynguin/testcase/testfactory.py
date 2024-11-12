@@ -1118,6 +1118,9 @@ class TestFactory:
         # choose one.
         parameter_type = self._test_cluster.select_concrete_type(parameter_type)
 
+        if isinstance(parameter_type, TensorType):
+            return self._create_tensor(test_case, position, recursion_depth)
+            
         if isinstance(parameter_type, NoneType):
             return self._create_none(test_case, position, recursion_depth)
         # TODO(fk) think about creating collections/primitives from calls?
