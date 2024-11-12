@@ -434,6 +434,8 @@ class TypeStringVisitor(TypeVisitor[str]):
 
     def visit_unsupported_type(self, left: Unsupported) -> str:  # noqa: D102
         return "<?>"
+    def visit_tensor_type(self, left: TensorType) -> str:  # noqa: D102
+        return "Tensor"
 
 
 class TypeReprVisitor(TypeVisitor[str]):
@@ -462,6 +464,8 @@ class TypeReprVisitor(TypeVisitor[str]):
 
     def visit_unsupported_type(self, left: Unsupported) -> str:  # noqa: D102
         return "Unsupported()"
+    def visit_tensor_type(self, left: TensorType) -> str:  # noqa: D102
+        return "TensorType()"
 
 
 class _SubtypeVisitor(TypeVisitor[bool]):
