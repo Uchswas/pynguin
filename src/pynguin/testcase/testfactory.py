@@ -567,6 +567,16 @@ class TestFactory:
             pass
         return False
 
+    def _create_tensor(self, test_case: tc.TestCase, position: int, recursion_depth: int) -> vr.VariableReference:
+        # 定义一个随机尺寸的张量
+        size = (randomness.next_int(1, 5), randomness.next_int(1, 5))
+        tensor = torch.randn(size)  # PyTorch
+        # tensor = tf.random.normal(size)  # TensorFlow
+        
+        # 创建一个 PrimitiveStatement 或自定义 TensorStatement
+        statement = stmt.PrimitiveStatement(test_case, tensor)
+        return test_case.add_variable_creating_statement(statement, position)
+
     def add_call_for(
         self,
         test_case: tc.TestCase,
