@@ -16,6 +16,7 @@
 #  SPDX-License-Identifier: BSD-2-Clause
 
 from __future__ import annotations
+from pynguin.analyses.typesystem import TensorType
 
 import builtins
 import contextlib
@@ -756,9 +757,17 @@ def shim_isinstance():
                     for typ in types
                 ):
                     return orig_isinstance(inst, types)
-                UsageTraceNode.from_proxy(inst).type_checks.update(types)
+                # 添加对 TensorType 的检测
+                if TensorType in types:
+                    UsageTraceNode.from_proxy(inst).type_checks.add(TensorType)
+                else:
+                    UsageTraceNode.from_proxy(inst).type_checks.update(types)
             else:
-                UsageTraceNode.from_proxy(inst).type_checks.add(types)
+                # 添加对 TensorType 的检测
+                if types is TensorType:
+                    UsageTraceNode.from_proxy(inst).type_checks.add(TensorType)
+                else:
+                    UsageTraceNode.from_proxy(inst).type_checks.add(types)
         return orig_isinstance(inst, types)
 
     builtins.isinstance = shim
