@@ -365,6 +365,11 @@ class _PartialTypeMatch(TypeVisitor[ProperType | None]):
         # Cannot compare.
         return None
 
+    def visit_tensor_type(self, left: TensorType) -> ProperType | None:
+        if isinstance(self.right, TensorType):
+            return left
+        return None
+
 
 def _is_partial_type_match(left: ProperType, right: ProperType) -> ProperType | None:
     """Is left a partial type match of right?
