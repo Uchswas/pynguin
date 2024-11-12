@@ -540,6 +540,9 @@ class _SubtypeVisitor(TypeVisitor[bool]):
     def visit_unsupported_type(self, left: Unsupported) -> bool:
         raise NotImplementedError("This type shall not be used during runtime")
 
+    def visit_tensor_type(self, left: TensorType) -> bool:
+        return isinstance(self.right, TensorType)
+
 
 class _MaybeSubtypeVisitor(_SubtypeVisitor):
     """A weaker subtype check, which only checks if left may be a subtype of right.
