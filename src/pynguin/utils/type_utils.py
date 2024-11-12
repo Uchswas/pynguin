@@ -49,7 +49,7 @@ def is_primitive_type(typ: type | None) -> bool:
     Returns:
         Whether the type is a primitive type
     """
-    return typ in PRIMITIVES
+    return typ in PRIMITIVES or is_tensor_type(typ)
 
 
 def is_collection_type(typ: type | None) -> bool:
