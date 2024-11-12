@@ -716,26 +716,19 @@ class ModuleTestCluster(TestCluster):  # noqa: PLR0904
         return len(self.__accessible_objects_under_test)
 
     @functools.lru_cache(maxsize=1024)
-    def get_generators_for(  # noqa: D102
-        self, typ: ProperType
-    ) -> tuple[OrderedSet[GenericAccessibleObject], bool]:
-        if isinstance(typ, AnyType):
-            # Just take everything when it's Any.
-            return (
-                OrderedSet(itertools.chain.from_iterable(self.__generators.values())),
-                False,
-            )
-
-        results: OrderedSet[GenericAccessibleObject] = OrderedSet()
-        only_any = True
-        for gen_type, generators in self.__generators.items():
-            if self.__type_system.is_maybe_subtype(gen_type, typ):
-                results.update(generators)
-                # Set flag to False as soon as we encounter a generator that is not
-                # for Any.
-                only_any &= gen_type == ANY
-
-        return results, only_any
+    def get_generators_for(self, typ: ProperType) -> tuple[OrderedSet[GenericAccessibleObject], bool]:
+        if typ == Tensor:
+            # 返回 Tensor 类型的生成器集合
+            return self.__generators[Tensor], False
+        else:
+            # 继续处理其他类型
+            results: OrderedSet[GenericAccessibleObject] = OrderedSet()
+            only_any = True
+            for gen_type, generators in self.__generators.items():
+                if self.__type_system.is_maybe_subtype(gen_type, typ):
+                    results.update(generators)
+                    only_any &= gen_type == ANY
+            return results, only_any
 
     class _FindModifiers(TypeVisitor[OrderedSet[GenericAccessibleObject]]):
         """A visitor to find all modifiers for the given type."""
