@@ -311,6 +311,16 @@ class TypeVisitor(Generic[T]):
         Returns:
             result of the visit
         """
+    @abstractmethod
+    def visit_tensor_type(self, left: TensorType) -> T:
+        """Visit the Tensor type.
+
+        Args:
+            left: the Tensor type
+
+        Returns:
+            result of the visit
+        """
 
 
 class _PartialTypeMatch(TypeVisitor[ProperType | None]):
