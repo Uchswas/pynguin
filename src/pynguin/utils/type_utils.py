@@ -15,7 +15,7 @@ import typing
 
 from inspect import isclass
 from typing import Any
-
+from pynguin.analyses.typesystem import DataframeType
 from typing_inspect import get_origin
 
 from pynguin.utils.orderedset import OrderedSet
@@ -28,6 +28,14 @@ PRIMITIVES = OrderedSet([int, str, bytes, bool, float, complex])
 COLLECTIONS = OrderedSet([list, set, tuple, dict])
 IGNORABLE_TYPES = OrderedSet(["builtins.generator", "builtins.async_generator"])
 
+def is_dataframe_type(typ: type | None) -> bool:
+    """Check if the given type is a DataFrameType.
+    Args:
+        typ: a given type
+    Returns:
+        Whether the type is a DataFrameType.
+    """
+    return isinstance(typ, DataframeType)
 
 def is_primitive_type(typ: type | None) -> bool:
     """Check if the given type is a primitive.
@@ -38,7 +46,7 @@ def is_primitive_type(typ: type | None) -> bool:
     Returns:
         Whether the type is a primitive type
     """
-    return typ in PRIMITIVES
+    return typ in PRIMITIVES or is_dataframe_type(typ)
 
 
 def is_collection_type(typ: type | None) -> bool:
@@ -216,7 +224,7 @@ def is_assertable(obj: Any, recursion_depth: int = 0) -> bool:
         return False
 
     tp_ = type(obj)
-    if is_enum(tp_) or is_primitive_type(tp_) or is_none_type(tp_):
+    if is_enum(tp_) or is_primitive_type(tp_) or is_none_type(tp_) or is_dataframe_type(tp_):
         return True
     if is_set(tp_) or is_list(tp_) or is_tuple(tp_):
         return all(is_assertable(elem, recursion_depth + 1) for elem in obj)

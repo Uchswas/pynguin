@@ -89,16 +89,16 @@ class ProperType(ABC):
         return str(self) < str(other)
 
 class DataframeType(ProperType):
-    """Represents a Tensor type."""
+    """Represents a Dataframe type."""
 
     def accept(self, visitor: TypeVisitor[T]) -> T:  # noqa: D102
-        return visitor.visit_tensor_type(self)
+        return visitor.visit_dataframe_type(self)
 
     def __hash__(self):
-        return hash(DataFrameType)
+        return hash(DataframeType)
 
     def __eq__(self, other):
-        return isinstance(other, DataFrameType)
+        return isinstance(other, DataframeType)
 
 
 class AnyType(ProperType):
@@ -313,9 +313,9 @@ class TypeVisitor(Generic[T]):
         """
     @abstractmethod
     def visit_dataframe_type(self, left: DataframeType) -> T:
-        """Visit the Tensor type.
+        """Visit the Dataframe type.
         Args:
-            left: the Tensor type
+            left: the Dataframe type
         Returns:
             result of the visit
         """
@@ -431,7 +431,7 @@ class TypeStringVisitor(TypeVisitor[str]):
 
     def visit_unsupported_type(self, left: Unsupported) -> str:  # noqa: D102
         return "<?>"
-    def visit_tensor_type(self, left: DataframeType) -> str:  # noqa: D102
+    def visit_dataframe_type(self, left: DataframeType) -> str:  # noqa: D102
         return "Dataframe"
 
 
@@ -463,7 +463,7 @@ class TypeReprVisitor(TypeVisitor[str]):
         return "Unsupported()"
     
     def visit_Dataframe_type(self, left: DataframeType) -> str:  # noqa: D102
-        return "TensorType()"
+        return "DataframeType()"
 
 
 class _SubtypeVisitor(TypeVisitor[bool]):
@@ -542,7 +542,7 @@ class _SubtypeVisitor(TypeVisitor[bool]):
     def visit_unsupported_type(self, left: Unsupported) -> bool:
         raise NotImplementedError("This type shall not be used during runtime")
     
-    def visit_tensor_type(self, left: DataframeType) -> bool:
+    def visit_dataframe_type(self, left: DataframeType) -> bool:
         return isinstance(self.right, DataframeType)
 
 class _MaybeSubtypeVisitor(_SubtypeVisitor):
@@ -1718,6 +1718,9 @@ class TypeSystem:  # noqa: PLR0904
             # TODO(fk) remove this one day.
             #  Hardcoded support generic dict, list and set.
             return self._fixup_known_generics(result)
+        
+        if hint.__module__ == "pandas" and hint.__name__ == "DataFrame":
+            return DataFrameType()
 
         if isinstance(hint, type):
             # `int` or `str` or `MyClass`

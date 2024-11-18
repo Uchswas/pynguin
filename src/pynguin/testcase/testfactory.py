@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import contextlib
 import logging
-
+import pandas as pd
+import random
 from typing import TYPE_CHECKING
 from typing import cast
 
@@ -565,6 +566,22 @@ class TestFactory:
         except ConstructionFailedException:
             pass
         return False
+    
+    def _create_dataframe(self, test_case: tc.TestCase, position: int, recursion_depth: int) -> vr.VariableReference:
+    # Define a random shape for the DataFrame
+        rows = random.randint(1, 5)
+        cols = random.randint(1, 5)
+
+        # Generate random data for the DataFrame
+        data = {
+            f"col_{i}": [random.random() for _ in range(rows)]
+            for i in range(cols)
+        }
+        dataframe = pd.DataFrame(data)
+
+        # Create a PrimitiveStatement or a custom DataFrameStatement
+        statement = stmt.PrimitiveStatement(test_case, dataframe)
+        return test_case.add_variable_creating_statement(statement, position)
 
     def add_call_for(
         self,
@@ -1106,6 +1123,9 @@ class TestFactory:
         # We only select a concrete type e.g. from a union, when we are forced to
         # choose one.
         parameter_type = self._test_cluster.select_concrete_type(parameter_type)
+
+        if isinstance(parameter_type, DataFrametype):
+            return self._create_dataframe(test_case, position, recursion_depth)
 
         if isinstance(parameter_type, NoneType):
             return self._create_none(test_case, position, recursion_depth)

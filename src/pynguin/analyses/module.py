@@ -19,7 +19,7 @@ import json
 import logging
 import queue
 import typing
-
+from pandas import DataFrame
 from collections import defaultdict
 from pathlib import Path
 from types import BuiltinFunctionType
@@ -570,6 +570,8 @@ class ModuleTestCluster(TestCluster):  # noqa: PLR0904
         self.__modifiers: dict[TypeInfo, OrderedSet[GenericAccessibleObject]] = (
             defaultdict(OrderedSet)
         )
+        # Add support for DataFrame type
+        self.__generators[DataFrame] = OrderedSet()  # Initialize a generator set for DataFrame
         self.__accessible_objects_under_test: OrderedSet[GenericAccessibleObject] = (
             OrderedSet()
         )

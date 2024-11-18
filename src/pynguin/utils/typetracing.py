@@ -16,6 +16,7 @@
 #  SPDX-License-Identifier: BSD-2-Clause
 
 from __future__ import annotations
+from pynguin.analyses.typesystem import DataframeType
 
 import builtins
 import contextlib
@@ -756,9 +757,15 @@ def shim_isinstance():
                     for typ in types
                 ):
                     return orig_isinstance(inst, types)
-                UsageTraceNode.from_proxy(inst).type_checks.update(types)
+                if DataframeType in types:
+                    UsageTraceNode.from_proxy(inst).type_checks.add(DataframeType)
+                else:
+                    UsageTraceNode.from_proxy(inst).type_checks.update(types)
             else:
-                UsageTraceNode.from_proxy(inst).type_checks.add(types)
+                if types is DataframeType:
+                    UsageTraceNode.from_proxy(inst).type_checks.add(DataframeType)
+                else:
+                    UsageTraceNode.from_proxy(inst).type_checks.add(types)
         return orig_isinstance(inst, types)
 
     builtins.isinstance = shim
