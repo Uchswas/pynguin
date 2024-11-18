@@ -88,6 +88,18 @@ class ProperType(ABC):
     def __lt__(self, other):
         return str(self) < str(other)
 
+class DataframeType(ProperType):
+    """Represents a Tensor type."""
+
+    def accept(self, visitor: TypeVisitor[T]) -> T:  # noqa: D102
+        return visitor.visit_tensor_type(self)
+
+    def __hash__(self):
+        return hash(DataFrameType)
+
+    def __eq__(self, other):
+        return isinstance(other, DataFrameType)
+
 
 class AnyType(ProperType):
     """The Any Type."""
@@ -299,7 +311,14 @@ class TypeVisitor(Generic[T]):
         Returns:
             result of the visit
         """
-
+    @abstractmethod
+    def visit_dataframe_type(self, left: DataframeType) -> T:
+        """Visit the Tensor type.
+        Args:
+            left: the Tensor type
+        Returns:
+            result of the visit
+        """
 
 class _PartialTypeMatch(TypeVisitor[ProperType | None]):
     """A type visitor to check for base type matches."""
@@ -341,6 +360,11 @@ class _PartialTypeMatch(TypeVisitor[ProperType | None]):
 
     def visit_unsupported_type(self, left: Unsupported) -> ProperType | None:
         # Cannot compare.
+        return None
+    
+    def visit_dataframe_type(self, left: DataframeType) -> ProperType | None:
+        if isinstance(self.right, DataframeType):
+            return left
         return None
 
 
@@ -407,6 +431,8 @@ class TypeStringVisitor(TypeVisitor[str]):
 
     def visit_unsupported_type(self, left: Unsupported) -> str:  # noqa: D102
         return "<?>"
+    def visit_tensor_type(self, left: DataframeType) -> str:  # noqa: D102
+        return "Dataframe"
 
 
 class TypeReprVisitor(TypeVisitor[str]):
@@ -435,6 +461,9 @@ class TypeReprVisitor(TypeVisitor[str]):
 
     def visit_unsupported_type(self, left: Unsupported) -> str:  # noqa: D102
         return "Unsupported()"
+    
+    def visit_Dataframe_type(self, left: DataframeType) -> str:  # noqa: D102
+        return "TensorType()"
 
 
 class _SubtypeVisitor(TypeVisitor[bool]):
@@ -512,7 +541,9 @@ class _SubtypeVisitor(TypeVisitor[bool]):
 
     def visit_unsupported_type(self, left: Unsupported) -> bool:
         raise NotImplementedError("This type shall not be used during runtime")
-
+    
+    def visit_tensor_type(self, left: DataframeType) -> bool:
+        return isinstance(self.right, DataframeType)
 
 class _MaybeSubtypeVisitor(_SubtypeVisitor):
     """A weaker subtype check, which only checks if left may be a subtype of right.
