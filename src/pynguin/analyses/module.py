@@ -671,11 +671,12 @@ class ModuleTestCluster(TestCluster):  # noqa: PLR0904
             self.__callables.add(generator)
 
         generated_type = generator.generated_type()
-        if isinstance(generated_type, NoneType) or generated_type.accept(
-            is_primitive_type
-        ):
+        if generated_type == DataFrame:
+            self.__generators[DataFrame].add(generator)
+        elif isinstance(generated_type, NoneType) or generated_type.accept(is_primitive_type):
             return
-        self.__generators[generated_type].add(generator)
+        else:
+            self.__generators[generated_type].add(generator)
 
     def add_accessible_object_under_test(  # noqa: D102
         self, objc: GenericAccessibleObject, data: _CallableData
@@ -707,26 +708,17 @@ class ModuleTestCluster(TestCluster):  # noqa: PLR0904
         return len(self.__accessible_objects_under_test)
 
     @functools.lru_cache(maxsize=1024)
-    def get_generators_for(  # noqa: D102
-        self, typ: ProperType
-    ) -> tuple[OrderedSet[GenericAccessibleObject], bool]:
-        if isinstance(typ, AnyType):
-            # Just take everything when it's Any.
-            return (
-                OrderedSet(itertools.chain.from_iterable(self.__generators.values())),
-                False,
-            )
-
-        results: OrderedSet[GenericAccessibleObject] = OrderedSet()
-        only_any = True
-        for gen_type, generators in self.__generators.items():
-            if self.__type_system.is_maybe_subtype(gen_type, typ):
-                results.update(generators)
-                # Set flag to False as soon as we encounter a generator that is not
-                # for Any.
-                only_any &= gen_type == ANY
-
-        return results, only_any
+    def get_generators_for(self, typ: ProperType) -> tuple[OrderedSet[GenericAccessibleObject], bool]:
+        if typ == DataFrame:
+            return self.__generators[DataFrame], False
+        else:
+            results: OrderedSet[GenericAccessibleObject] = OrderedSet()
+            only_any = True
+            for gen_type, generators in self.__generators.items():
+                if self.__type_system.is_maybe_subtype(gen_type, typ):
+                    results.update(generators)
+                    only_any &= gen_type == ANY
+            return results, only_any
 
     class _FindModifiers(TypeVisitor[OrderedSet[GenericAccessibleObject]]):
         """A visitor to find all modifiers for the given type."""
@@ -809,9 +801,10 @@ class ModuleTestCluster(TestCluster):  # noqa: PLR0904
     def select_concrete_type(self, typ: ProperType) -> ProperType:  # noqa: D102
         if isinstance(typ, AnyType):
             typ = randomness.choice(self.get_all_generatable_types())
-        if isinstance(typ, UnionType):
+        elif isinstance(typ, UnionType):
             typ = self.select_concrete_type(randomness.choice(typ.items))
-        return typ
+        elif typ == DataFrame:
+            return DataFrame
 
     def track_statistics_values(  # noqa: D102
         self, tracking_fun: Callable[[RuntimeVariable, Any], None]
