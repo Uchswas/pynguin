@@ -31,6 +31,7 @@ from pynguin.analyses.typesystem import is_primitive_type
 from pynguin.utils import randomness
 from pynguin.utils.exceptions import ConstructionFailedException
 from pynguin.utils.type_utils import is_optional_parameter
+from pynguin.analyses.typesystem import DataFrameType
 
 
 if TYPE_CHECKING:
@@ -1124,7 +1125,7 @@ class TestFactory:
         # choose one.
         parameter_type = self._test_cluster.select_concrete_type(parameter_type)
 
-        if isinstance(parameter_type, DataFrametype):
+        if isinstance(parameter_type, DataFrameType):
             return self._create_dataframe(test_case, position, recursion_depth)
 
         if isinstance(parameter_type, NoneType):

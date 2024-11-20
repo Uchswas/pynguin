@@ -15,7 +15,7 @@ import typing
 
 from inspect import isclass
 from typing import Any
-from pynguin.analyses.typesystem import DataframeType
+#from pynguin.analyses.typesystem import DataFrameType
 from typing_inspect import get_origin
 
 from pynguin.utils.orderedset import OrderedSet
@@ -29,13 +29,14 @@ COLLECTIONS = OrderedSet([list, set, tuple, dict])
 IGNORABLE_TYPES = OrderedSet(["builtins.generator", "builtins.async_generator"])
 
 def is_dataframe_type(typ: type | None) -> bool:
+    from pynguin.analyses.typesystem import DataFrameType
     """Check if the given type is a DataFrameType.
     Args:
         typ: a given type
     Returns:
         Whether the type is a DataFrameType.
     """
-    return isinstance(typ, DataframeType)
+    return isinstance(typ, DataFrameType)
 
 def is_primitive_type(typ: type | None) -> bool:
     """Check if the given type is a primitive.

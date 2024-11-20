@@ -88,17 +88,17 @@ class ProperType(ABC):
     def __lt__(self, other):
         return str(self) < str(other)
 
-class DataframeType(ProperType):
-    """Represents a Dataframe type."""
+class DataFrameType(ProperType):
+    """Represents a DataFrame type."""
 
     def accept(self, visitor: TypeVisitor[T]) -> T:  # noqa: D102
         return visitor.visit_dataframe_type(self)
 
     def __hash__(self):
-        return hash(DataframeType)
+        return hash(DataFrameType)
 
     def __eq__(self, other):
-        return isinstance(other, DataframeType)
+        return isinstance(other, DataFrameType)
 
 
 class AnyType(ProperType):
@@ -312,10 +312,10 @@ class TypeVisitor(Generic[T]):
             result of the visit
         """
     @abstractmethod
-    def visit_dataframe_type(self, left: DataframeType) -> T:
-        """Visit the Dataframe type.
+    def visit_dataframe_type(self, left: DataFrameType) -> T:
+        """Visit the DataFrame type.
         Args:
-            left: the Dataframe type
+            left: the DataFrame type
         Returns:
             result of the visit
         """
@@ -362,8 +362,8 @@ class _PartialTypeMatch(TypeVisitor[ProperType | None]):
         # Cannot compare.
         return None
     
-    def visit_dataframe_type(self, left: DataframeType) -> ProperType | None:
-        if isinstance(self.right, DataframeType):
+    def visit_dataframe_type(self, left: DataFrameType) -> ProperType | None:
+        if isinstance(self.right, DataFrameType):
             return left
         return None
 
@@ -431,8 +431,8 @@ class TypeStringVisitor(TypeVisitor[str]):
 
     def visit_unsupported_type(self, left: Unsupported) -> str:  # noqa: D102
         return "<?>"
-    def visit_dataframe_type(self, left: DataframeType) -> str:  # noqa: D102
-        return "Dataframe"
+    def visit_dataframe_type(self, left: DataFrameType) -> str:  # noqa: D102
+        return "DataFrame"
 
 
 class TypeReprVisitor(TypeVisitor[str]):
@@ -462,8 +462,8 @@ class TypeReprVisitor(TypeVisitor[str]):
     def visit_unsupported_type(self, left: Unsupported) -> str:  # noqa: D102
         return "Unsupported()"
     
-    def visit_Dataframe_type(self, left: DataframeType) -> str:  # noqa: D102
-        return "DataframeType()"
+    def visit_DataFrame_type(self, left: DataFrameType) -> str:  # noqa: D102
+        return "DataFrameType()"
 
 
 class _SubtypeVisitor(TypeVisitor[bool]):
@@ -542,8 +542,8 @@ class _SubtypeVisitor(TypeVisitor[bool]):
     def visit_unsupported_type(self, left: Unsupported) -> bool:
         raise NotImplementedError("This type shall not be used during runtime")
     
-    def visit_dataframe_type(self, left: DataframeType) -> bool:
-        return isinstance(self.right, DataframeType)
+    def visit_dataframe_type(self, left: DataFrameType) -> bool:
+        return isinstance(self.right, DataFrameType)
 
 class _MaybeSubtypeVisitor(_SubtypeVisitor):
     """A weaker subtype check, which only checks if left may be a subtype of right.
@@ -1717,9 +1717,14 @@ class TypeSystem:  # noqa: PLR0904
             )
             # TODO(fk) remove this one day.
             #  Hardcoded support generic dict, list and set.
+        
             return self._fixup_known_generics(result)
+        if isinstance(hint, str) or isinstance(hint, bool) or hint is Ellipsis:
+            _LOGGER.debug("Unsupported type hint as string or boolean: %s", hint)
+            return unsupported
         
         if hint.__module__ == "pandas" and hint.__name__ == "DataFrame":
+            print("after...........................")
             return DataFrameType()
 
         if isinstance(hint, type):
