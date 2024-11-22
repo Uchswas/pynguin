@@ -431,6 +431,7 @@ class TypeStringVisitor(TypeVisitor[str]):
 
     def visit_unsupported_type(self, left: Unsupported) -> str:  # noqa: D102
         return "<?>"
+    
     def visit_dataframe_type(self, left: DataFrameType) -> str:  # noqa: D102
         return "DataFrame"
 
@@ -559,6 +560,9 @@ class _MaybeSubtypeVisitor(_SubtypeVisitor):
 
     def visit_unsupported_type(self, left: Unsupported) -> bool:
         raise NotImplementedError("This type shall not be used during runtime")
+    
+    def visit_dataframe_type(self, left: DataFrameType) -> bool:
+        return isinstance(self.right, DataFrameType)
 
 
 class _CollectionTypeVisitor(TypeVisitor[bool]):
@@ -1349,34 +1353,50 @@ class TypeSystem:  # noqa: PLR0904
         return left.accept(_SubtypeVisitor(self, right, self.is_subtype))
 
     @functools.lru_cache(maxsize=16384)
+    # def is_maybe_subtype(self, left: ProperType, right: ProperType) -> bool:
+    #     """Is 'left' maybe a subtype of 'right'?
+
+    #     This is a more lenient check than is_subtype. Consider a function that
+    #     returns tuple[str | int | bytes, str | int | bytes]. Strictly speaking, we
+    #     cannot use such a value as an argument for a function that requires an argument
+    #     of type tuple[int, int]. However, it may be possible that the returned
+    #     value is tuple[int, int], in which case it does work.
+    #     This check only differs from is_subtype in how it handles Unions.
+    #     Instead of requiring every type to be a subtype, it is sufficient that one
+    #     type of the Union is a subtype.
+
+    #     Args:
+    #         left: The left type
+    #         right: The right type
+
+    #     Returns:
+    #         True, if left may be a subtype of right.
+    #     """
+    #     if isinstance(right, AnyType):
+    #         # trivial case
+    #         return True
+    #     if isinstance(right, UnionType) and not isinstance(left, UnionType):
+    #         # Case that would be duplicated for each type, so we put it here.
+    #         return any(
+    #             self.is_maybe_subtype(left, right_elem) for right_elem in right.items
+    #         )
+    #     return left.accept(_MaybeSubtypeVisitor(self, right, self.is_maybe_subtype))
+
     def is_maybe_subtype(self, left: ProperType, right: ProperType) -> bool:
-        """Is 'left' maybe a subtype of 'right'?
+        if not isinstance(left, ProperType):
+            # Convert the type if it's a raw DataFrame
+            left = self.convert_type_hint(left)
 
-        This is a more lenient check than is_subtype. Consider a function that
-        returns tuple[str | int | bytes, str | int | bytes]. Strictly speaking, we
-        cannot use such a value as an argument for a function that requires an argument
-        of type tuple[int, int]. However, it may be possible that the returned
-        value is tuple[int, int], in which case it does work.
-        This check only differs from is_subtype in how it handles Unions.
-        Instead of requiring every type to be a subtype, it is sufficient that one
-        type of the Union is a subtype.
+        if not isinstance(right, ProperType):
+            right = self.convert_type_hint(right)
 
-        Args:
-            left: The left type
-            right: The right type
-
-        Returns:
-            True, if left may be a subtype of right.
-        """
         if isinstance(right, AnyType):
-            # trivial case
+            # Trivial case
             return True
         if isinstance(right, UnionType) and not isinstance(left, UnionType):
-            # Case that would be duplicated for each type, so we put it here.
-            return any(
-                self.is_maybe_subtype(left, right_elem) for right_elem in right.items
-            )
+            return any(self.is_maybe_subtype(left, right_elem) for right_elem in right.items)
         return left.accept(_MaybeSubtypeVisitor(self, right, self.is_maybe_subtype))
+
 
     @property
     def dot(self) -> str:
@@ -1723,8 +1743,7 @@ class TypeSystem:  # noqa: PLR0904
             _LOGGER.debug("Unsupported type hint as string or boolean: %s", hint)
             return unsupported
         
-        if hint.__module__ == "pandas" and hint.__name__ == "DataFrame":
-            print("after...........................")
+        if isinstance(hint, type) and hint.__module__ == "pandas" and hint.__name__ == "DataFrame":
             return DataFrameType()
 
         if isinstance(hint, type):

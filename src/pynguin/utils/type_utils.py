@@ -199,29 +199,50 @@ def is_enum(value: Any) -> bool:
     return issubclass(value, enum.Enum)
 
 
+# def is_assertable(obj: Any, recursion_depth: int = 0) -> bool:
+#     """Returns whether we can generate an assertion using an exact comparison value.
+
+#     Primitives (except float) are assertable.
+#     Enum values are assertable.
+#     List, sets, dicts and tuples composed only of assertable objects are also
+#     assertable.
+
+#     Objects that are accepted by this function must be constructable in
+#     `pynguin.assertion.assertion_to_ast._create_assertable_object`
+
+#     Args:
+#         obj: The object to check for assertability.
+#         recursion_depth: Avoid endless recursion for nested structures.
+
+#     Returns:
+#         True, if we can assert on the given value.
+#     """
+#     if recursion_depth > 4:
+#         # Object is possibly nested to deep to make a sensible assertion on.
+#         return False
+#     if isinstance(obj, float):
+#         # Creating exact assertions on float values is usually not desirable.
+#         return False
+
+#     tp_ = type(obj)
+#     if is_enum(tp_) or is_primitive_type(tp_) or is_none_type(tp_) or is_dataframe_type(tp_):
+#         return True
+#     if is_set(tp_) or is_list(tp_) or is_tuple(tp_):
+#         return all(is_assertable(elem, recursion_depth + 1) for elem in obj)
+#     if is_dict(tp_):
+#         return all(
+#             is_assertable(key, recursion_depth + 1)
+#             and is_assertable(value, recursion_depth + 1)
+#             for key, value in obj.items()
+#         )
+#     return False
+
+
 def is_assertable(obj: Any, recursion_depth: int = 0) -> bool:
-    """Returns whether we can generate an assertion using an exact comparison value.
-
-    Primitives (except float) are assertable.
-    Enum values are assertable.
-    List, sets, dicts and tuples composed only of assertable objects are also
-    assertable.
-
-    Objects that are accepted by this function must be constructable in
-    `pynguin.assertion.assertion_to_ast._create_assertable_object`
-
-    Args:
-        obj: The object to check for assertability.
-        recursion_depth: Avoid endless recursion for nested structures.
-
-    Returns:
-        True, if we can assert on the given value.
-    """
+    """Check if the object is assertable."""
     if recursion_depth > 4:
-        # Object is possibly nested to deep to make a sensible assertion on.
         return False
     if isinstance(obj, float):
-        # Creating exact assertions on float values is usually not desirable.
         return False
 
     tp_ = type(obj)
@@ -236,7 +257,6 @@ def is_assertable(obj: Any, recursion_depth: int = 0) -> bool:
             for key, value in obj.items()
         )
     return False
-
 
 def get_class_that_defined_method(method: object) -> object | None:
     """Retrieves the class that defines a method.

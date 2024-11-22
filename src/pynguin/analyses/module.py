@@ -559,7 +559,31 @@ class ModuleTestCluster(TestCluster):  # noqa: PLR0904
     dependencies.
     """
 
+    # def __init__(self, linenos: int) -> None:  # noqa: D107
+    #     self.__type_system = TypeSystem()
+    #     self.__linenos = linenos
+    #     self.__generators: dict[ProperType, OrderedSet[GenericAccessibleObject]] = (
+    #         defaultdict(OrderedSet)
+    #     )
+
+    #     # Modifier belong to a certain class, not type.
+    #     self.__modifiers: dict[TypeInfo, OrderedSet[GenericAccessibleObject]] = (
+    #         defaultdict(OrderedSet)
+    #     )
+    #     # Add support for DataFrame type
+    #     self.__generators[DataFrame] = OrderedSet()  # Initialize a generator set for DataFrame
+    #     self.__accessible_objects_under_test: OrderedSet[GenericAccessibleObject] = (
+    #         OrderedSet()
+    #     )
+    #     self.__function_data_for_accessibles: dict[
+    #         GenericAccessibleObject, _CallableData
+    #     ] = {}
+
+    #     # Keep track of all callables, this is only for statistics purposes.
+    #     self.__callables: OrderedSet[GenericCallableAccessibleObject] = OrderedSet()
+
     def __init__(self, linenos: int) -> None:  # noqa: D107
+        from pynguin.analyses.typesystem import DataFrameType
         self.__type_system = TypeSystem()
         self.__linenos = linenos
         self.__generators: dict[ProperType, OrderedSet[GenericAccessibleObject]] = (
@@ -570,8 +594,10 @@ class ModuleTestCluster(TestCluster):  # noqa: PLR0904
         self.__modifiers: dict[TypeInfo, OrderedSet[GenericAccessibleObject]] = (
             defaultdict(OrderedSet)
         )
-        # Add support for DataFrame type
-        self.__generators[DataFrame] = OrderedSet()  # Initialize a generator set for DataFrame
+
+        # Add support for DataFrameType (custom type instead of Pandas DataFrame)
+        self.__generators[DataFrameType()] = OrderedSet()  # Use DataFrameType here
+
         self.__accessible_objects_under_test: OrderedSet[GenericAccessibleObject] = (
             OrderedSet()
         )
@@ -581,6 +607,7 @@ class ModuleTestCluster(TestCluster):  # noqa: PLR0904
 
         # Keep track of all callables, this is only for statistics purposes.
         self.__callables: OrderedSet[GenericCallableAccessibleObject] = OrderedSet()
+
 
     def log_cluster_statistics(self) -> None:  # noqa: D102
         stats = TypeGuessingStats()
@@ -666,18 +693,29 @@ class ModuleTestCluster(TestCluster):  # noqa: PLR0904
     def linenos(self) -> int:  # noqa: D102
         return self.__linenos
 
-    def add_generator(self, generator: GenericAccessibleObject) -> None:  # noqa: D102
-        if isinstance(generator, GenericCallableAccessibleObject):
-            self.__callables.add(generator)
+    # def add_generator(self, generator: GenericAccessibleObject) -> None:  # noqa: D102
+    #     if isinstance(generator, GenericCallableAccessibleObject):
+    #         self.__callables.add(generator)
 
+    #     generated_type = generator.generated_type()
+    #     if generated_type == DataFrame:
+    #         self.__generators[DataFrame].add(generator)
+    #     elif isinstance(generated_type, NoneType) or generated_type.accept(is_primitive_type):
+    #         return
+    #     else:
+    #         self.__generators[generated_type].add(generator)
+
+    def add_generator(self, generator: GenericAccessibleObject) -> None:
+        from pynguin.analyses.typesystem import DataFrameType
         generated_type = generator.generated_type()
-        if generated_type == DataFrame:
-            self.__generators[DataFrame].add(generator)
+        
+        if generated_type == DataFrameType:
+            self.__generators[DataFrameType].add(generator)
         elif isinstance(generated_type, NoneType) or generated_type.accept(is_primitive_type):
             return
         else:
             self.__generators[generated_type].add(generator)
-
+        
     def add_accessible_object_under_test(  # noqa: D102
         self, objc: GenericAccessibleObject, data: _CallableData
     ) -> None:

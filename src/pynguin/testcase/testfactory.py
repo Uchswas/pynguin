@@ -568,22 +568,33 @@ class TestFactory:
             pass
         return False
     
-    def _create_dataframe(self, test_case: tc.TestCase, position: int, recursion_depth: int) -> vr.VariableReference:
-    # Define a random shape for the DataFrame
-        rows = random.randint(1, 5)
-        cols = random.randint(1, 5)
+    # def _create_dataframe(self, test_case: tc.TestCase, position: int, recursion_depth: int) -> vr.VariableReference:
+    # # Define a random shape for the DataFrame
+    #     rows = random.randint(1, 5)
+    #     cols = random.randint(1, 5)
 
+    #     # Generate random data for the DataFrame
+    #     data = {
+    #         f"col_{i}": [random.random() for _ in range(rows)]
+    #         for i in range(cols)
+    #     }
+    #     dataframe = pd.DataFrame(data)
+
+    #     # Create a PrimitiveStatement or a custom DataFrameStatement
+    #     statement = stmt.PrimitiveStatement(test_case, dataframe)
+    #     return test_case.add_variable_creating_statement(statement, position)
+
+    def _create_dataframe(self, test_case: tc.TestCase, position: int, recursion_depth: int) -> vr.VariableReference:
         # Generate random data for the DataFrame
-        data = {
-            f"col_{i}": [random.random() for _ in range(rows)]
-            for i in range(cols)
-        }
+        num_rows = randomness.next_int(1, 5)
+        num_cols = randomness.next_int(1, 5)
+        data = {f"col_{i}": [randomness.next_float() for _ in range(num_rows)] for i in range(num_cols)}
         dataframe = pd.DataFrame(data)
 
-        # Create a PrimitiveStatement or a custom DataFrameStatement
+        # Create a statement for the DataFrame
         statement = stmt.PrimitiveStatement(test_case, dataframe)
         return test_case.add_variable_creating_statement(statement, position)
-
+    
     def add_call_for(
         self,
         test_case: tc.TestCase,
@@ -1008,6 +1019,31 @@ class TestFactory:
         self._logger.debug("Satisfied %d parameters", len(parameters))
         return parameters
 
+    # def _reuse_variable(
+    #     self, test_case: tc.TestCase, parameter_type: ProperType, position: int
+    # ) -> vr.VariableReference | None:
+    #     """Reuse an existing variable, if possible.
+
+    #     Args:
+    #         test_case: the test case to take the variable from
+    #         parameter_type: the type of the variable that is needed
+    #         position: the position to limit the search
+
+    #     Returns:
+    #         A matching existing variable, if existing
+    #     """
+    #     objects = test_case.get_objects(parameter_type, position)
+    #     probability: float = (
+    #         config.configuration.test_creation.primitive_reuse_probability
+    #         if parameter_type.accept(is_primitive_type)
+    #         else config.configuration.test_creation.object_reuse_probability
+    #     )
+    #     if objects and randomness.next_float() <= probability:
+    #         var = randomness.choice(objects)
+    #         self._logger.debug("Reusing variable %s for type %s", var, parameter_type)
+    #         return var
+    #     return None
+
     def _reuse_variable(
         self, test_case: tc.TestCase, parameter_type: ProperType, position: int
     ) -> vr.VariableReference | None:
@@ -1021,6 +1057,16 @@ class TestFactory:
         Returns:
             A matching existing variable, if existing
         """
+        
+        from pandas import DataFrame
+        # Convert DataFrame to DataFrameType if necessary
+        if isinstance(parameter_type, DataFrame):
+            parameter_type = DataFrameType()
+
+        # Ensure parameter_type is a ProperType
+        if not isinstance(parameter_type, ProperType):
+            raise TypeError(f"Unsupported parameter type: {parameter_type}")
+
         objects = test_case.get_objects(parameter_type, position)
         probability: float = (
             config.configuration.test_creation.primitive_reuse_probability
@@ -1033,6 +1079,7 @@ class TestFactory:
             return var
         return None
 
+    
     def _get_variable_fallback(
         self,
         test_case: tc.TestCase,
@@ -1094,6 +1141,10 @@ class TestFactory:
         *,
         allow_none: bool,
     ) -> vr.VariableReference | None:
+        
+        if parameter_type is None:
+            return None
+        
         if (
             reused_variable := self._reuse_variable(test_case, parameter_type, position)
         ) is not None:
@@ -1111,6 +1162,7 @@ class TestFactory:
         return self._get_variable_fallback(
             test_case, parameter_type, position, recursion_depth, allow_none=allow_none
         )
+        
 
     def _attempt_generation(
         self,
@@ -1124,6 +1176,9 @@ class TestFactory:
         # We only select a concrete type e.g. from a union, when we are forced to
         # choose one.
         parameter_type = self._test_cluster.select_concrete_type(parameter_type)
+        
+        if parameter_type is None:
+            return None
 
         if isinstance(parameter_type, DataFrameType):
             return self._create_dataframe(test_case, position, recursion_depth)

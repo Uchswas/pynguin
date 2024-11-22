@@ -16,7 +16,6 @@
 #  SPDX-License-Identifier: BSD-2-Clause
 
 from __future__ import annotations
-# from pynguin.analyses.typesystem import DataFrameType
 
 import builtins
 import contextlib
@@ -747,8 +746,24 @@ def shim_isinstance():
     """
     orig_isinstance = builtins.isinstance
 
+    # def shim(inst, types):
+    #     if type(inst) is ObjectProxy:
+    #         if types is ObjectProxy or orig_isinstance(types, ObjectProxy):
+    #             return orig_isinstance(inst, types)
+    #         if orig_isinstance(types, tuple):
+    #             if any(
+    #                 typ is ObjectProxy or orig_isinstance(typ, ObjectProxy)
+    #                 for typ in types
+    #             ):
+    #                 return orig_isinstance(inst, types)
+    #             UsageTraceNode.from_proxy(inst).type_checks.update(types)
+    #         else:
+    #             UsageTraceNode.from_proxy(inst).type_checks.add(types)
+    #     return orig_isinstance(inst, types)
+
     def shim(inst, types):
         from pynguin.analyses.typesystem import DataFrameType
+        
         if type(inst) is ObjectProxy:
             if types is ObjectProxy or orig_isinstance(types, ObjectProxy):
                 return orig_isinstance(inst, types)
@@ -768,7 +783,7 @@ def shim_isinstance():
                 else:
                     UsageTraceNode.from_proxy(inst).type_checks.add(types)
         return orig_isinstance(inst, types)
-
+    
     builtins.isinstance = shim
     yield
     builtins.isinstance = orig_isinstance
