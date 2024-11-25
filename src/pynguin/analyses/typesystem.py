@@ -1712,6 +1712,50 @@ class TypeSystem:  # noqa: PLR0904
             typ,
         )
         return self._fixup_known_generics(result)
+    
+    def __convert_args_if_exists(
+        self, hint: Any, unsupported: ProperType
+    ) -> tuple[ProperType, ...]:
+        if hasattr(hint, "__args__"):
+            return tuple(
+                self.convert_type_hint(t, unsupported=unsupported)
+                for t in hint.__args__
+            )
+        return ()
+
+    def make_instance(self, typ: TypeInfo) -> Instance | TupleType | NoneType:
+        """Create an instance from the given type.
+
+        Args:
+            typ: The type info.
+
+        Returns:
+            An instance or TupleType
+        """
+        if typ.full_name == "builtins.tuple":
+            return TupleType((ANY,), unknown_size=True)
+        if typ.full_name == "builtins.NoneType":
+            return NONE_TYPE
+        result = Instance(
+            typ,
+        )
+        return self._fixup_known_generics(result)
+
+    @staticmethod
+    def _fixup_known_generics(result: Instance) -> Instance:
+        if result.type.num_hardcoded_generic_parameters is not None:
+            args = tuple(result.args)
+            if len(result.args) < result.type.num_hardcoded_generic_parameters:
+                # Fill with AnyType if to small
+                args += (ANY,) * (
+                    result.type.num_hardcoded_generic_parameters - len(args)
+                )
+            elif len(result.args) > result.type.num_hardcoded_generic_parameters:
+                # Remove excessive args.
+                args = args[: result.type.num_hardcoded_generic_parameters]
+            return Instance(result.type, args)
+        return result
+
 
 
 class TestFactory:
