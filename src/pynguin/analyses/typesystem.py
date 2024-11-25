@@ -46,6 +46,7 @@ from pynguin.utils.orderedset import OrderedSet
 from pynguin.utils.type_utils import COLLECTIONS
 from pynguin.utils.type_utils import PRIMITIVES
 
+from pandas import DataFrame
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable
