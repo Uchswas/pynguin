@@ -2,19 +2,25 @@
 # Please check them before you use them.
 import pytest
 import numpy_example as module_0
-import platform as module_1
+import pandas.core.indexes.base as module_1
+import pandas._libs.lib as module_2
+import numpy as module_3
 
 
 def test_case_0():
     none_type_0 = None
-    var_0 = module_0.dataframe_operations(none_type_0)
+    var_0 = module_0.dataframe_operations(none_type_0, threshold=none_type_0)
 
 
 @pytest.mark.xfail(strict=True)
 def test_case_1():
-    bool_0 = False
-    tuple_0 = (bool_0, bool_0)
-    module_0.dataframe_operations(tuple_0, threshold=tuple_0, column=tuple_0)
+    none_type_0 = None
+    var_0 = module_0.dataframe_operations(none_type_0, threshold=none_type_0)
+    var_1 = module_0.dataframe_operations(none_type_0)
+    var_2 = module_0.dataframe_operations(
+        none_type_0, threshold=none_type_0, column=none_type_0
+    )
+    module_0.dataframe_operations(none_type_0, threshold=var_0)
 
 
 def test_case_2():
@@ -22,44 +28,122 @@ def test_case_2():
     var_0 = module_0.dataframe_operations(
         none_type_0, none_type_0, none_type_0, none_type_0
     )
+    none_type_1 = None
+    var_1 = module_0.dataframe_operations(none_type_1)
+    none_type_2 = None
+    var_2 = module_0.dataframe_operations(none_type_2, none_type_2, column=none_type_2)
+    var_3 = module_0.dataframe_operations(var_0, column=none_type_1)
 
 
-@pytest.mark.xfail(strict=True)
 def test_case_3():
     none_type_0 = None
-    var_0 = module_0.dataframe_operations(none_type_0, none_type_0, none_type_0)
-    none_type_1 = var_0.copy()
-    var_1 = module_0.dataframe_operations(none_type_1)
-    module_0.dataframe_operations(none_type_0, threshold=none_type_1)
+    var_0 = module_0.dataframe_operations(none_type_0, none_type_0)
 
 
 @pytest.mark.xfail(strict=True)
 def test_case_4():
-    none_type_0 = None
-    bool_0 = False
-    var_0 = module_0.dataframe_operations(
-        none_type_0, threshold=none_type_0, column=bool_0
+    var_0 = module_1.get_unanimous_names()
+    assert (
+        f"{type(module_1.annotations).__module__}.{type(module_1.annotations).__qualname__}"
+        == "__future__._Feature"
     )
-    var_1 = module_0.dataframe_operations(none_type_0, column=none_type_0)
-    var_2 = var_0.__reversed__()
-    module_0.dataframe_operations(var_2, var_1)
+    assert module_1.annotations.optional == (3, 7, 0, "beta", 1)
+    assert module_1.annotations.mandatory == (3, 11, 0, "alpha", 0)
+    assert module_1.annotations.compiler_flag == 16777216
+    assert module_1.TYPE_CHECKING is False
+    assert (
+        f"{type(module_1.NaT).__module__}.{type(module_1.NaT).__qualname__}"
+        == "pandas._libs.tslibs.nattype.NaTType"
+    )
+    assert module_1.no_default == module_2._NoDefault.no_default
+    assert (
+        f"{type(module_1.F).__module__}.{type(module_1.F).__qualname__}"
+        == "typing.TypeVar"
+    )
+    assert module_1.Self is None
+    assert module_1.npt is None
+    var_1 = module_0.dataframe_operations(var_0, threshold=var_0)
+    module_3.seterrcall(var_1)
 
 
-@pytest.mark.xfail(strict=True)
 def test_case_5():
     none_type_0 = None
-    var_0 = module_1.python_compiler()
-    assert var_0 == "GCC 11.4.0"
-    var_1 = module_0.dataframe_operations(none_type_0, threshold=var_0, column=var_0)
-    var_1.get_group(var_1)
+    var_0 = module_0.dataframe_operations(
+        none_type_0, none_type_0, none_type_0, none_type_0
+    )
+    var_1 = module_3.int64()
+    assert f"{type(var_1).__module__}.{type(var_1).__qualname__}" == "numpy.int64"
+    assert (
+        f"{type(module_3.False_).__module__}.{type(module_3.False_).__qualname__}"
+        == "numpy.bool"
+    )
+    assert (
+        f"{type(module_3.ScalarType).__module__}.{type(module_3.ScalarType).__qualname__}"
+        == "builtins.tuple"
+    )
+    assert len(module_3.ScalarType) == 31
+    assert (
+        f"{type(module_3.True_).__module__}.{type(module_3.True_).__qualname__}"
+        == "numpy.bool"
+    )
+    assert module_3.e == pytest.approx(2.718281828459045, abs=0.01, rel=0.01)
+    assert module_3.euler_gamma == pytest.approx(0.5772156649015329, abs=0.01, rel=0.01)
+    assert module_3.inf == pytest.approx(1e309, abs=0.01, rel=0.01)
+    assert module_3.little_endian is True
+    assert module_3.newaxis is None
+    assert module_3.pi == pytest.approx(3.141592653589793, abs=0.01, rel=0.01)
+    assert (
+        f"{type(module_3.sctypeDict).__module__}.{type(module_3.sctypeDict).__qualname__}"
+        == "builtins.dict"
+    )
+    assert len(module_3.sctypeDict) == 52
+    assert module_3.typecodes == {
+        "Character": "c",
+        "Integer": "bhilqnp",
+        "UnsignedInteger": "BHILQNP",
+        "Float": "efdg",
+        "Complex": "FDG",
+        "AllInteger": "bBhHiIlLqQnNpP",
+        "AllFloat": "efdgFDG",
+        "Datetime": "Mm",
+        "All": "?bhilqnpBHILQNPefdgFDGSUVOMm",
+    }
+    assert (
+        f"{type(module_3.c_).__module__}.{type(module_3.c_).__qualname__}"
+        == "numpy.lib._index_tricks_impl.CClass"
+    )
+    assert len(module_3.c_) == 0
+    assert (
+        f"{type(module_3.r_).__module__}.{type(module_3.r_).__qualname__}"
+        == "numpy.lib._index_tricks_impl.RClass"
+    )
+    assert len(module_3.r_) == 0
+    assert (
+        f"{type(module_3.s_).__module__}.{type(module_3.s_).__qualname__}"
+        == "numpy.lib._index_tricks_impl.IndexExpression"
+    )
+    assert (
+        f"{type(module_3.ogrid).__module__}.{type(module_3.ogrid).__qualname__}"
+        == "numpy.lib._index_tricks_impl.OGridClass"
+    )
+    assert (
+        f"{type(module_3.mgrid).__module__}.{type(module_3.mgrid).__qualname__}"
+        == "numpy.lib._index_tricks_impl.MGridClass"
+    )
+    assert (
+        f"{type(module_3.index_exp).__module__}.{type(module_3.index_exp).__qualname__}"
+        == "numpy.lib._index_tricks_impl.IndexExpression"
+    )
+    var_2 = module_0.dataframe_operations(var_0)
+    bool_0 = True
+    bool_1 = False
+    list_0 = [bool_0, var_1, bool_1]
+    var_3 = module_0.dataframe_operations(list_0, bool_1)
 
 
 @pytest.mark.xfail(strict=True)
 def test_case_6():
     none_type_0 = None
-    var_0 = module_0.dataframe_operations(none_type_0, none_type_0, none_type_0)
-    bool_0 = False
-    bool_1 = True
-    tuple_0 = (bool_0, bool_1)
-    var_1 = module_0.dataframe_operations(var_0, var_0)
-    module_0.dataframe_operations(tuple_0, bool_0, bool_0)
+    var_0 = module_0.dataframe_operations(none_type_0, threshold=none_type_0)
+    var_1 = module_0.dataframe_operations(none_type_0)
+    module_0.dataframe_operations(none_type_0, threshold=var_1, column=var_1)
