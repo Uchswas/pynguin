@@ -12,12 +12,14 @@ from typing import TypeVar
 from typing import Union
 from unittest import mock
 
+import pandas as pd
+
 import pytest
 
 import pynguin.configuration as config
 
 from pynguin.analyses.module import generate_test_cluster
-from pynguin.analyses.typesystem import UNSUPPORTED
+from pynguin.analyses.typesystem import UNSUPPORTED, DataFrameType, TestFactory
 from pynguin.analyses.typesystem import AnyType
 from pynguin.analyses.typesystem import InferredSignature
 from pynguin.analyses.typesystem import Instance
@@ -926,3 +928,47 @@ def test_no_partial_type_match(type_system, left, right):
         type_system.convert_type_hint(left), type_system.convert_type_hint(right)
     )
     assert match is None
+    @pytest.mark.parametrize(
+        "typ,expected",
+        [
+            (pd.DataFrame, DataFrameType()),
+        ],
+    )
+    def test_convert_type_hint_dataframe(type_system, typ, expected):
+        assert type_system.convert_type_hint(typ) == expected
+        assert repr(type_system.convert_type_hint(typ)) == repr(expected)
+
+
+    def test_dataframe_type_equality():
+        assert DataFrameType() == DataFrameType()
+        assert DataFrameType() != AnyType()
+
+
+    def test_dataframe_type_hash():
+        assert hash(DataFrameType()) == hash(DataFrameType())
+        assert hash(DataFrameType()) != hash(AnyType())
+
+
+    def test_dataframe_type_str():
+        assert str(DataFrameType()) == "DataFrame"
+
+
+    def test_dataframe_type_repr():
+        assert repr(DataFrameType()) == "DataFrameType()"
+
+
+    def test_test_factory_create_dataframe():
+        factory = TestFactory()
+        df = factory._create_dataframe()
+        assert isinstance(df, pd.DataFrame)
+        assert list(df.columns) == ['A', 'B', 'C']
+        assert df.shape == (3, 3)
+
+
+    def test_test_factory_attempt_generation_dataframe():
+        factory = TestFactory()
+        df_type = DataFrameType()
+        df = factory._attempt_generation(None, df_type, 0, 0, False)
+        assert isinstance(df, pd.DataFrame)
+        assert list(df.columns) == ['A', 'B', 'C']
+        assert df.shape == (3, 3)

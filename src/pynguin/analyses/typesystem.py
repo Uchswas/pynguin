@@ -47,6 +47,7 @@ from pynguin.utils.type_utils import COLLECTIONS
 from pynguin.utils.type_utils import PRIMITIVES
 
 from pandas import DataFrame
+import pandas as pd
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable
@@ -220,6 +221,19 @@ class Unsupported(ProperType):
         return visitor.visit_unsupported_type(self)
 
 
+class DataFrameType(ProperType):
+    """The DataFrame type."""
+
+    def accept(self, visitor: TypeVisitor[T]) -> T:  # noqa: D102
+        return visitor.visit_dataframe_type(self)
+
+    def __hash__(self):
+        return hash(DataFrameType)
+
+    def __eq__(self, other):
+        return isinstance(other, DataFrameType)
+
+
 # Static to instances to avoid repeated construction.
 ANY = AnyType()
 NONE_TYPE = NoneType()
@@ -227,79 +241,35 @@ UNSUPPORTED = Unsupported()
 
 
 class TypeVisitor(Generic[T]):
-    """A type visitor.
-
-    Note that the parameter of the visit_* methods is called 'left',
-    because it makes the implementations of _SubTypeVisitor and _MaybeSubTypeVisitor
-    more clear and Python does not like changing the names of parameters in subclasses,
-    thus we renamed them in this class.
-    """
+    """A type visitor."""
 
     @abstractmethod
     def visit_any_type(self, left: AnyType) -> T:
-        """Visit the Any type.
-
-        Args:
-            left: the Any type
-
-        Returns:
-            result of the visit
-        """
+        pass
 
     @abstractmethod
     def visit_none_type(self, left: NoneType) -> T:
-        """Visit the None type.
-
-        Args:
-            left: the None type
-
-        Returns:
-            result of the visit
-        """
+        pass
 
     @abstractmethod
     def visit_instance(self, left: Instance) -> T:
-        """Visit an instance.
-
-        Args:
-            left: instance
-
-        Returns:
-            result of the visit
-        """
+        pass
 
     @abstractmethod
     def visit_tuple_type(self, left: TupleType) -> T:
-        """Visit a tuple type.
-
-        Args:
-            left: tuple
-
-        Returns:
-            result of the visit
-        """
+        pass
 
     @abstractmethod
     def visit_union_type(self, left: UnionType) -> T:
-        """Visit a union.
-
-        Args:
-            left: union
-
-        Returns:
-            result of the visit
-        """
+        pass
 
     @abstractmethod
     def visit_unsupported_type(self, left: Unsupported) -> T:
-        """Visit unsupported type.
+        pass
 
-        Args:
-            left: unsupported
-
-        Returns:
-            result of the visit
-        """
+    @abstractmethod
+    def visit_dataframe_type(self, left: DataFrameType) -> T:
+        pass
 
 
 class _PartialTypeMatch(TypeVisitor[ProperType | None]):
@@ -342,6 +312,11 @@ class _PartialTypeMatch(TypeVisitor[ProperType | None]):
 
     def visit_unsupported_type(self, left: Unsupported) -> ProperType | None:
         # Cannot compare.
+        return None
+
+    def visit_dataframe_type(self, left: DataFrameType) -> ProperType | None:
+        if isinstance(self.right, DataFrameType):
+            return DataFrameType()
         return None
 
 
@@ -389,19 +364,22 @@ class TypeStringVisitor(TypeVisitor[str]):
     def visit_instance(self, left: Instance) -> str:  # noqa: D102
         rep = left.type.name if left.type.module == "builtins" else left.type.full_name
         if len(left.args) > 0:
-            rep += "[" + self._sequence_str(left.args) + "]"
+            rep += f"[{', '.join(map(str, left.args))}]"
         return rep
 
     def visit_tuple_type(self, left: TupleType) -> str:  # noqa: D102
         rep = "tuple"
         if len(left.args) > 0:
-            rep += "[" + self._sequence_str(left.args) + "]"
+            rep += f"[{', '.join(map(str, left.args))}]"
         return rep
 
     def visit_union_type(self, left: UnionType) -> str:  # noqa: D102
         if len(left.items) == 1:
-            return left.items[0].accept(self)
+            return str(left.items[0])
         return self._sequence_str(left.items, sep=" | ")
+
+    def visit_dataframe_type(self, left: DataFrameType) -> str:  # noqa: D102
+        return "DataFrame"
 
     def _sequence_str(self, typs: Sequence[ProperType], sep=", ") -> str:
         return sep.join(t.accept(self) for t in typs)
@@ -422,7 +400,7 @@ class TypeReprVisitor(TypeVisitor[str]):
     def visit_instance(self, left: Instance) -> str:  # noqa: D102
         rep = f"Instance({left.type!r}"
         if len(left.args) > 0:
-            rep += "(" + self._sequence_str(left.args) + ")"
+            rep += f", {self._sequence_str(left.args)})"
         return rep + ")"
 
     def visit_tuple_type(self, left: TupleType) -> str:  # noqa: D102
@@ -430,6 +408,9 @@ class TypeReprVisitor(TypeVisitor[str]):
 
     def visit_union_type(self, left: UnionType) -> str:  # noqa: D102
         return f"UnionType({self._sequence_str(left.items)})"
+
+    def visit_dataframe_type(self, left: DataFrameType) -> str:  # noqa: D102
+        return "DataFrameType()"
 
     def _sequence_str(self, typs: Sequence[ProperType]) -> str:
         return ", ".join(t.accept(self) for t in typs)
@@ -514,6 +495,9 @@ class _SubtypeVisitor(TypeVisitor[bool]):
     def visit_unsupported_type(self, left: Unsupported) -> bool:
         raise NotImplementedError("This type shall not be used during runtime")
 
+    def visit_dataframe_type(self, left: DataFrameType) -> bool:
+        return isinstance(self.right, DataFrameType)
+
 
 class _MaybeSubtypeVisitor(_SubtypeVisitor):
     """A weaker subtype check, which only checks if left may be a subtype of right.
@@ -529,6 +513,9 @@ class _MaybeSubtypeVisitor(_SubtypeVisitor):
 
     def visit_unsupported_type(self, left: Unsupported) -> bool:
         raise NotImplementedError("This type shall not be used during runtime")
+
+    def visit_dataframe_type(self, left: DataFrameType) -> bool:
+        return isinstance(self.right, DataFrameType)
 
 
 class _CollectionTypeVisitor(TypeVisitor[bool]):
@@ -552,6 +539,9 @@ class _CollectionTypeVisitor(TypeVisitor[bool]):
 
     def visit_unsupported_type(self, left: Unsupported) -> bool:
         raise NotImplementedError("This type shall not be used during runtime")
+
+    def visit_dataframe_type(self, left: DataFrameType) -> bool:
+        return False
 
 
 is_collection_type = _CollectionTypeVisitor()
@@ -577,6 +567,9 @@ class _PrimitiveTypeVisitor(TypeVisitor[bool]):
 
     def visit_unsupported_type(self, left: Unsupported) -> bool:
         raise NotImplementedError("This type shall not be used during runtime")
+
+    def visit_dataframe_type(self, left: DataFrameType) -> bool:
+        return False
 
 
 is_primitive_type = _PrimitiveTypeVisitor()
@@ -1176,30 +1169,18 @@ class InferredSignature:
 
 
 class TypeSystem:  # noqa: PLR0904
-    """Implements Pynguin's internal type system.
-
-    Provides a simple inheritance graph relating various classes using their subclass
-    relationships. Note that parents point to their children.
-
-    This is also the central system to store/handle type information.
-    """
+    """Implements Pynguin's internal type system."""
 
     def __init__(self):  # noqa: D107
         self._graph = nx.DiGraph()
-        # Maps all known types from their full name to their type info.
         self._types: dict[str, TypeInfo] = {}
-        # Maps attributes to type which have that attribute
         self._attribute_map: dict[str, OrderedSet[TypeInfo]] = defaultdict(OrderedSet)
-        # These types are intrinsic for Pynguin, i.e., we can generate them ourselves
-        # without needing a generator. We store them here, so we don't have to generate
-        # them all the time.
         self.primitive_proper_types = [
             self.convert_type_hint(prim) for prim in PRIMITIVES
         ]
         self.collection_proper_types = [
             self.convert_type_hint(coll) for coll in COLLECTIONS
         ]
-        # Pre-compute numeric tower
         numeric = [complex, float, int, bool]
         self.numeric_tower: dict[Instance, list[Instance]] = cast(
             dict[Instance, list[Instance]],
@@ -1210,6 +1191,7 @@ class TypeSystem:  # noqa: PLR0904
                 for idx, typ in enumerate(numeric)
             },
         )
+        self.dataframe_type = DataFrameType()
 
     def enable_numeric_tower(self):
         """Enable the numeric tower on this type system."""
@@ -1653,6 +1635,8 @@ class TypeSystem:  # noqa: PLR0904
         Returns:
             A proper type.
         """
+        if hint is DataFrame:
+            return self.dataframe_type
         # We must handle a lot of special cases, so try to give an example for each one.
         if hint is Any or hint is None:
             # typing.Any or empty
@@ -1709,35 +1693,48 @@ class TypeSystem:  # noqa: PLR0904
             )
         return ()
 
-    def make_instance(self, typ: TypeInfo) -> Instance | TupleType | NoneType:
+    def make_instance(self, typ: TypeInfo) -> Instance | TupleType | NoneType | DataFrameType:
         """Create an instance from the given type.
 
         Args:
             typ: The type info.
 
         Returns:
-            An instance or TupleType
+            An instance, TupleType, NoneType, or DataFrameType
         """
         if typ.full_name == "builtins.tuple":
             return TupleType((ANY,), unknown_size=True)
         if typ.full_name == "builtins.NoneType":
             return NONE_TYPE
+        if typ.full_name == "pandas.core.frame.DataFrame":
+            return DataFrameType()
         result = Instance(
             typ,
         )
         return self._fixup_known_generics(result)
 
-    @staticmethod
-    def _fixup_known_generics(result: Instance) -> Instance:
-        if result.type.num_hardcoded_generic_parameters is not None:
-            args = tuple(result.args)
-            if len(result.args) < result.type.num_hardcoded_generic_parameters:
-                # Fill with AnyType if to small
-                args += (ANY,) * (
-                    result.type.num_hardcoded_generic_parameters - len(args)
-                )
-            elif len(result.args) > result.type.num_hardcoded_generic_parameters:
-                # Remove excessive args.
-                args = args[: result.type.num_hardcoded_generic_parameters]
-            return Instance(result.type, args)
-        return result
+
+class TestFactory:
+    def _create_dataframe(self) -> pd.DataFrame:
+        """Create a sample DataFrame for testing."""
+        data = {
+            'A': [1, 2, 3],
+            'B': [4, 5, 6],
+            'C': [7, 8, 9]
+        }
+        return pd.DataFrame(data)
+
+    def _attempt_generation(
+        self,
+        test_case,
+        parameter_type: ProperType,
+        position: int,
+        recursion_depth: int,
+        allow_none: bool,
+    ):
+        if isinstance(parameter_type, DataFrameType):
+            return self._create_dataframe()
+        # existing generation logic
+
+
+
