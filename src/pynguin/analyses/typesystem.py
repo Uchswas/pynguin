@@ -1635,8 +1635,9 @@ class TypeSystem:  # noqa: PLR0904
         Returns:
             A proper type.
         """
-        if hint is DataFrame:
-            return self.dataframe_type
+        if isinstance(hint, type) and hint.__module__ == "pandas" and hint.__name__ == "DataFrame":
+            print("DataFrame detect") 
+            return DataFrameType
         # We must handle a lot of special cases, so try to give an example for each one.
         if hint is Any or hint is None:
             # typing.Any or empty
@@ -1707,7 +1708,7 @@ class TypeSystem:  # noqa: PLR0904
         if typ.full_name == "builtins.NoneType":
             return NONE_TYPE
         if typ.full_name == "pandas.core.frame.DataFrame":
-            return DataFrameType()
+            return DataFrameType
         result = Instance(
             typ,
         )
