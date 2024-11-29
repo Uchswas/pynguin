@@ -1183,22 +1183,45 @@ class TypeSystem:  # noqa: PLR0904
     This is also the central system to store/handle type information.
     """
 
+    # def __init__(self):  # noqa: D107
+    #     self._graph = nx.DiGraph()
+    #     # Maps all known types from their full name to their type info.
+    #     self._types: dict[str, TypeInfo] = {}
+    #     # Maps attributes to type which have that attribute
+    #     self._attribute_map: dict[str, OrderedSet[TypeInfo]] = defaultdict(OrderedSet)
+    #     # These types are intrinsic for Pynguin, i.e., we can generate them ourselves
+    #     # without needing a generator. We store them here, so we don't have to generate
+    #     # them all the time.
+    #     self.primitive_proper_types = [
+    #         self.convert_type_hint(prim) for prim in PRIMITIVES
+    #     ]
+    #     self.collection_proper_types = [
+    #         self.convert_type_hint(coll) for coll in COLLECTIONS
+    #     ]
+    #     # Pre-compute numeric tower
+    #     numeric = [complex, float, int, bool]
+    #     self.numeric_tower: dict[Instance, list[Instance]] = cast(
+    #         dict[Instance, list[Instance]],
+    #         {
+    #             self.convert_type_hint(typ): [
+    #                 self.convert_type_hint(tp) for tp in numeric[idx:]
+    #             ]
+    #             for idx, typ in enumerate(numeric)
+    #         },
+    #     )
     def __init__(self):  # noqa: D107
         self._graph = nx.DiGraph()
-        # Maps all known types from their full name to their type info.
         self._types: dict[str, TypeInfo] = {}
-        # Maps attributes to type which have that attribute
         self._attribute_map: dict[str, OrderedSet[TypeInfo]] = defaultdict(OrderedSet)
-        # These types are intrinsic for Pynguin, i.e., we can generate them ourselves
-        # without needing a generator. We store them here, so we don't have to generate
-        # them all the time.
         self.primitive_proper_types = [
             self.convert_type_hint(prim) for prim in PRIMITIVES
         ]
         self.collection_proper_types = [
             self.convert_type_hint(coll) for coll in COLLECTIONS
         ]
-        # Pre-compute numeric tower
+        # Add DataFrame as a recognized collection type
+        import pandas as pd
+        self.collection_proper_types.append(self.convert_type_hint(pd.DataFrame))
         numeric = [complex, float, int, bool]
         self.numeric_tower: dict[Instance, list[Instance]] = cast(
             dict[Instance, list[Instance]],
@@ -1209,6 +1232,8 @@ class TypeSystem:  # noqa: PLR0904
                 for idx, typ in enumerate(numeric)
             },
         )
+
+
 
     def enable_numeric_tower(self):
         """Enable the numeric tower on this type system."""
@@ -1444,24 +1469,40 @@ class TypeSystem:  # noqa: PLR0904
             for attribute in type_info.attributes:
                 self._attribute_map[attribute].add(type_info)
 
+    # def wrap_var_param_type(self, typ: ProperType, param_kind) -> ProperType:
+    #     """Wrap parameter types.
+
+    #     Wrap the parameter type of *args and **kwargs in List[...] or Dict[str, ...],
+    #     respectively.
+
+    #     Args:
+    #         typ: The type to be wrapped.
+    #         param_kind: the kind of parameter.
+
+    #     Returns:
+    #         The wrapped type, or the original type, if no wrapping is required.
+    #     """
+    #     if param_kind == inspect.Parameter.VAR_POSITIONAL:
+    #         return Instance(self.to_type_info(list), (typ,))
+    #     if param_kind == inspect.Parameter.VAR_KEYWORD:
+    #         return Instance(self.to_type_info(dict), (self.convert_type_hint(str), typ))
+    #     return typ
     def wrap_var_param_type(self, typ: ProperType, param_kind) -> ProperType:
-        """Wrap parameter types.
-
-        Wrap the parameter type of *args and **kwargs in List[...] or Dict[str, ...],
-        respectively.
-
-        Args:
-            typ: The type to be wrapped.
-            param_kind: the kind of parameter.
-
-        Returns:
-            The wrapped type, or the original type, if no wrapping is required.
-        """
+        """Wrap parameter types."""
+        import pandas as pd
         if param_kind == inspect.Parameter.VAR_POSITIONAL:
+            # Wrap *args in List[...] or DataFrame[...] if applicable
+            if isinstance(typ, Instance) and typ.type.raw_type is pd.DataFrame:
+                return Instance(self.to_type_info(pd.DataFrame), (typ,))
             return Instance(self.to_type_info(list), (typ,))
         if param_kind == inspect.Parameter.VAR_KEYWORD:
+            # Wrap **kwargs in Dict[str, ...] or DataFrame[...] if applicable
+            if isinstance(typ, Instance) and typ.type.raw_type is pd.DataFrame:
+                return Instance(self.to_type_info(pd.DataFrame), (self.convert_type_hint(str), typ))
             return Instance(self.to_type_info(dict), (self.convert_type_hint(str), typ))
         return typ
+
+
 
     def infer_type_info(
         self,
@@ -1628,76 +1669,112 @@ class TypeSystem:  # noqa: PLR0904
             # Give up?
             return ANY
 
+    # def convert_type_hint(self, hint: Any, unsupported: ProperType = ANY) -> ProperType:
+    #     """Converts a type hint to a proper type.
+
+    #     Python's builtin functionality makes handling types during runtime really
+    #     hard, because 1) this is not intended to be used at runtime and 2) there are a
+    #     lot of different notations, due to the constantly evolving type hint system.
+    #     We also cannot easily use mypy's type abstraction because it is 1) strongly
+    #     encapsulated and not part of mypy's public API and 2) is designed to be used
+    #     for static type checking. This method tries to translate type hints into our
+    #     own type abstraction in order to make handling types less painful.
+
+    #     This conversion is naive when compared to what sophisticated type checkers like
+    #     mypy do, but it is hopefully sufficient for our purposes.
+    #     This method only handles a very small subset of the types that we may
+    #     encounter in the wild, but at least it allows use to better reason about types.
+    #     This should be extended in the future to handle more cases.
+
+    #     Args:
+    #         hint: The type hint
+    #         unsupported: The type to use when encountering an unsupported type construct
+
+    #     Returns:
+    #         A proper type.
+    #     """
+    #     # We must handle a lot of special cases, so try to give an example for each one.
+    #     if hint is Any or hint is None:
+    #         # typing.Any or empty
+    #         return ANY
+    #     if hint is type(None):
+    #         # None
+    #         return NONE_TYPE
+    #     if hint is tuple:
+    #         # tuple
+    #         # TODO(fk) Tuple without size. Should use tuple[Any, ...] ?
+    #         #  But ... (ellipsis) is not a type.
+    #         return TupleType((ANY,), unknown_size=True)
+    #     if get_origin(hint) is tuple:
+    #         # Type is `tuple[int, str]` or `typing.Tuple[int, str]` or `typing.Tuple`
+    #         args = self.__convert_args_if_exists(hint, unsupported=unsupported)
+    #         if not args:
+    #             return TupleType((ANY,), unknown_size=True)
+    #         return TupleType(args)
+    #     if is_union_type(hint) or isinstance(hint, types.UnionType):
+    #         # Type is `int | str` or `typing.Union[int, str]`
+    #         # TODO(fk) don't make a union including Any.
+    #         return UnionType(
+    #             tuple(
+    #                 sorted(self.__convert_args_if_exists(hint, unsupported=unsupported))
+    #             )
+    #         )
+    #     if isinstance(hint, _BaseGenericAlias | types.GenericAlias):
+    #         # `list[int, str]` or `List[int, str]` or `Dict[int, str]` or `set[str]`
+    #         result = Instance(
+    #             self.to_type_info(hint.__origin__),
+    #             self.__convert_args_if_exists(hint, unsupported=unsupported),
+    #         )
+    #         # TODO(fk) remove this one day.
+    #         #  Hardcoded support generic dict, list and set.
+    #         return self._fixup_known_generics(result)
+
+    #     if isinstance(hint, type):
+    #         # `int` or `str` or `MyClass`
+    #         return self._fixup_known_generics(Instance(self.to_type_info(hint)))
+    #     # TODO(fk) log unknown hints to so we can better understand what
+    #     #  we should add next
+    #     #  Remove this or log to statistics?
+    #     _LOGGER.debug("Unknown type hint: %s", hint)
+    #     # Should raise an error in the future.
+    #     return unsupported
     def convert_type_hint(self, hint: Any, unsupported: ProperType = ANY) -> ProperType:
-        """Converts a type hint to a proper type.
-
-        Python's builtin functionality makes handling types during runtime really
-        hard, because 1) this is not intended to be used at runtime and 2) there are a
-        lot of different notations, due to the constantly evolving type hint system.
-        We also cannot easily use mypy's type abstraction because it is 1) strongly
-        encapsulated and not part of mypy's public API and 2) is designed to be used
-        for static type checking. This method tries to translate type hints into our
-        own type abstraction in order to make handling types less painful.
-
-        This conversion is naive when compared to what sophisticated type checkers like
-        mypy do, but it is hopefully sufficient for our purposes.
-        This method only handles a very small subset of the types that we may
-        encounter in the wild, but at least it allows use to better reason about types.
-        This should be extended in the future to handle more cases.
-
-        Args:
-            hint: The type hint
-            unsupported: The type to use when encountering an unsupported type construct
-
-        Returns:
-            A proper type.
-        """
-        # We must handle a lot of special cases, so try to give an example for each one.
+        """Converts a type hint to a proper type."""
+        import pandas as pd  # Import pandas here to avoid circular dependencies
+        
+        # Handle pandas DataFrame
+        if hint is pd.DataFrame:
+            return Instance(self.to_type_info(pd.DataFrame))
+        
+        # Other cases remain unchanged
         if hint is Any or hint is None:
-            # typing.Any or empty
             return ANY
         if hint is type(None):
-            # None
             return NONE_TYPE
         if hint is tuple:
-            # tuple
-            # TODO(fk) Tuple without size. Should use tuple[Any, ...] ?
-            #  But ... (ellipsis) is not a type.
             return TupleType((ANY,), unknown_size=True)
         if get_origin(hint) is tuple:
-            # Type is `tuple[int, str]` or `typing.Tuple[int, str]` or `typing.Tuple`
             args = self.__convert_args_if_exists(hint, unsupported=unsupported)
             if not args:
                 return TupleType((ANY,), unknown_size=True)
             return TupleType(args)
         if is_union_type(hint) or isinstance(hint, types.UnionType):
-            # Type is `int | str` or `typing.Union[int, str]`
-            # TODO(fk) don't make a union including Any.
             return UnionType(
                 tuple(
                     sorted(self.__convert_args_if_exists(hint, unsupported=unsupported))
                 )
             )
         if isinstance(hint, _BaseGenericAlias | types.GenericAlias):
-            # `list[int, str]` or `List[int, str]` or `Dict[int, str]` or `set[str]`
             result = Instance(
                 self.to_type_info(hint.__origin__),
                 self.__convert_args_if_exists(hint, unsupported=unsupported),
             )
-            # TODO(fk) remove this one day.
-            #  Hardcoded support generic dict, list and set.
             return self._fixup_known_generics(result)
-
         if isinstance(hint, type):
-            # `int` or `str` or `MyClass`
             return self._fixup_known_generics(Instance(self.to_type_info(hint)))
-        # TODO(fk) log unknown hints to so we can better understand what
-        #  we should add next
-        #  Remove this or log to statistics?
         _LOGGER.debug("Unknown type hint: %s", hint)
-        # Should raise an error in the future.
-        return unsupported
-
+        return unsupported    
+    
     def __convert_args_if_exists(
         self, hint: Any, unsupported: ProperType
     ) -> tuple[ProperType, ...]:
@@ -1708,7 +1785,25 @@ class TypeSystem:  # noqa: PLR0904
             )
         return ()
 
+    # def make_instance(self, typ: TypeInfo) -> Instance | TupleType | NoneType:
+    #     """Create an instance from the given type.
+
+    #     Args:
+    #         typ: The type info.
+
+    #     Returns:
+    #         An instance or TupleType
+    #     """
+    #     if typ.full_name == "builtins.tuple":
+    #         return TupleType((ANY,), unknown_size=True)
+    #     if typ.full_name == "builtins.NoneType":
+    #         return NONE_TYPE
+    #     result = Instance(
+    #         typ,
+    #     )
+    #     return self._fixup_known_generics(result)
     def make_instance(self, typ: TypeInfo) -> Instance | TupleType | NoneType:
+        import pandas as pd
         """Create an instance from the given type.
 
         Args:
@@ -1721,10 +1816,14 @@ class TypeSystem:  # noqa: PLR0904
             return TupleType((ANY,), unknown_size=True)
         if typ.full_name == "builtins.NoneType":
             return NONE_TYPE
-        result = Instance(
-            typ,
-        )
+        if typ.full_name == "pandas.core.frame.DataFrame":
+            # Handle pandas DataFrame type
+            return Instance(self.to_type_info(pd.DataFrame))
+        result = Instance(typ)
         return self._fixup_known_generics(result)
+
+
+
 
     @staticmethod
     def _fixup_known_generics(result: Instance) -> Instance:

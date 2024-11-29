@@ -34,7 +34,41 @@ class RandomAlgorithm(GenerationAlgorithm):
 
     _logger = logging.getLogger(__name__)
 
-    def generate_tests(self) -> tsc.TestSuiteChromosome:  # noqa: D102
+    # def generate_tests(self) -> tsc.TestSuiteChromosome:  # noqa: D102
+    #     self.before_search_start()
+    #     test_chromosome: tsc.TestSuiteChromosome = tsc.TestSuiteChromosome()
+    #     failing_test_chromosome: tsc.TestSuiteChromosome = tsc.TestSuiteChromosome()
+    #     for fitness_function in self._test_suite_fitness_functions:
+    #         test_chromosome.add_fitness_function(fitness_function)
+    #         failing_test_chromosome.add_fitness_function(fitness_function)
+
+    #     for coverage_function in self._test_suite_coverage_functions:
+    #         test_chromosome.add_coverage_function(coverage_function)
+    #         failing_test_chromosome.add_coverage_function(coverage_function)
+
+    #     combined_chromosome = self._combine_current_individual(
+    #         test_chromosome, failing_test_chromosome
+    #     )
+
+    #     self.before_first_search_iteration(combined_chromosome)
+    #     while self.resources_left() and combined_chromosome.get_fitness() != 0.0:
+    #         try:
+    #             self.generate_sequence(
+    #                 test_chromosome,
+    #                 failing_test_chromosome,
+    #             )
+    #             combined_chromosome = self._combine_current_individual(
+    #                 test_chromosome, failing_test_chromosome
+    #             )
+    #         except (ConstructionFailedException, GenerationException) as exception:
+    #             self._logger.debug(
+    #                 "Generate test case failed with exception %s", exception
+    #             )
+    #         self.after_search_iteration(combined_chromosome)
+    #     self.after_search_finish()
+    #     return combined_chromosome
+    def generate_tests(self) -> tsc.TestSuiteChromosome:
+        import pandas as pd
         self.before_search_start()
         test_chromosome: tsc.TestSuiteChromosome = tsc.TestSuiteChromosome()
         failing_test_chromosome: tsc.TestSuiteChromosome = tsc.TestSuiteChromosome()
@@ -57,6 +91,11 @@ class RandomAlgorithm(GenerationAlgorithm):
                     test_chromosome,
                     failing_test_chromosome,
                 )
+                # Add logic for DataFrame handling
+                for input_value in test_chromosome.inputs:
+                    if isinstance(input_value, pd.DataFrame):
+                        self._logger.info("Generated test case with DataFrame input")
+
                 combined_chromosome = self._combine_current_individual(
                     test_chromosome, failing_test_chromosome
                 )
@@ -67,7 +106,7 @@ class RandomAlgorithm(GenerationAlgorithm):
             self.after_search_iteration(combined_chromosome)
         self.after_search_finish()
         return combined_chromosome
-
+    
     def generate_sequence(
         self,
         test_chromosome: tsc.TestSuiteChromosome,

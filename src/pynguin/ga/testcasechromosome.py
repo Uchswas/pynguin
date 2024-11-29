@@ -67,6 +67,16 @@ class TestCaseChromosome(chrom.Chromosome):
             the wrapped test case.
         """
         return self._test_case
+    
+    @property
+    def inputs(self):
+        """Retrieve inputs from the underlying test case."""
+        if hasattr(self._test_case, "get_inputs"):
+            return self._test_case.get_inputs()
+        elif hasattr(self._test_case, "inputs"):
+            return self._test_case.inputs
+        else:
+            return []
 
     def num_mutations(self) -> int:
         """The number of mutations.

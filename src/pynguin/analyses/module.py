@@ -562,6 +562,7 @@ class ModuleTestCluster(TestCluster):  # noqa: PLR0904
     def __init__(self, linenos: int) -> None:  # noqa: D107
         self.__type_system = TypeSystem()
         self.__linenos = linenos
+        self.functions = OrderedSet()
         self.__generators: dict[ProperType, OrderedSet[GenericAccessibleObject]] = (
             defaultdict(OrderedSet)
         )
@@ -675,11 +676,12 @@ class ModuleTestCluster(TestCluster):  # noqa: PLR0904
             return
         self.__generators[generated_type].add(generator)
 
-    def add_accessible_object_under_test(  # noqa: D102
+    def add_accessible_object_under_test(
         self, objc: GenericAccessibleObject, data: _CallableData
     ) -> None:
-        self.__accessible_objects_under_test.add(objc)
-        self.__function_data_for_accessibles[objc] = data
+        super().add_accessible_object_under_test(objc, data)
+        if isinstance(objc, GenericFunction):
+            self.functions.add(objc)  # Populate the functions set
 
     def add_modifier(  # noqa: D102
         self, typ: TypeInfo, obj: GenericAccessibleObject
@@ -1444,17 +1446,25 @@ def analyse_module(
     return test_cluster
 
 
+# def generate_test_cluster(
+#     module_name: str,
+#     type_inference_strategy: TypeInferenceStrategy = TypeInferenceStrategy.TYPE_HINTS,
+# ) -> ModuleTestCluster:
+#     """Generates a new test cluster from the given module.
+
+#     Args:
+#         module_name: The name of the root module
+#         type_inference_strategy: Which type-inference strategy to use
+
+#     Returns:
+#         A new test cluster for the given module
+#     """
+#     return analyse_module(parse_module(module_name), type_inference_strategy)
+
 def generate_test_cluster(
     module_name: str,
     type_inference_strategy: TypeInferenceStrategy = TypeInferenceStrategy.TYPE_HINTS,
 ) -> ModuleTestCluster:
-    """Generates a new test cluster from the given module.
-
-    Args:
-        module_name: The name of the root module
-        type_inference_strategy: Which type-inference strategy to use
-
-    Returns:
-        A new test cluster for the given module
-    """
-    return analyse_module(parse_module(module_name), type_inference_strategy)
+    test_cluster = analyse_module(parse_module(module_name), type_inference_strategy)
+    LOGGER.debug(f"Attributes of test_cluster: {dir(test_cluster)}")
+    return test_cluster

@@ -13,6 +13,8 @@ import ast
 import logging
 import os
 import typing
+import pandas as pd
+from collections import defaultdict
 
 from abc import ABC
 from pathlib import Path
@@ -33,15 +35,82 @@ if typing.TYPE_CHECKING:
     from typing import ClassVar
 
 
-ConstantTypes = float | int | str | bytes | complex
+ConstantTypes = float | int | str | bytes | complex | pd.DataFrame
 
 # Used for generic type hinting
-T = typing.TypeVar("T", float, int, str, bytes, complex)
+T = typing.TypeVar("T", float, int, str, bytes, complex, pd.DataFrame)
 
 
 logger = logging.getLogger(__name__)
 
 
+# class ConstantPool:
+#     """A pool of constants for various types."""
+
+#     def __init__(self):  # noqa: D107
+#         self._constants: dict[type[ConstantTypes], OrderedSet[ConstantTypes]] = {
+#             tp_: OrderedSet() for tp_ in typing.get_args(ConstantTypes)
+#         }
+#         logger.debug(f"ConstantPool initialized with types: {list(self._constants.keys())}")
+
+#     def add_constant(self, constant: ConstantTypes) -> None:
+#         """Add new constant value.
+
+#         Args:
+#             constant: The constant to add
+#         """
+#         constant_type = type(constant)
+#         if constant_type not in self._constants:
+#             logger.warning(f"Unsupported constant type: {constant_type}")
+#             return
+#         self._constants[type(constant)].add(constant)
+#         logger.info(f"Added constant of type {constant_type}: {constant}")
+
+#     def remove_constant(self, value: ConstantTypes) -> None:
+#         """Remove the given constant.
+
+#         Args:
+#             value: the constant to remove
+#         """
+#         values = self._constants.get(type(value))
+#         assert values is not None
+#         values.discard(value)
+
+#     def has_constant_for(self, tp_: type[T]) -> bool:
+#         """Does this pool have a constant of the given type?
+
+#         Args:
+#             tp_: The queried type
+
+#         Returns:
+#             True, if there is a constant
+#         """
+#         return len(self._constants[tp_]) > 0
+
+#     def get_constant_for(self, tp_: type[T]) -> T:
+#         """Get a random value from the constant pool.
+
+#         Args:
+#             tp_: The type to retrieve
+
+#         Returns:
+#             A random element of the given type
+#         """
+#         return typing.cast(T, randomness.choice(tuple(self._constants[tp_])))
+
+#     def get_all_constants_for(self, tp_: type[T]) -> OrderedSet[T]:
+#         """Get all values from the constant pool.
+
+#         Args:
+#             tp_: The type to retrieve
+
+#         Returns:
+#             All constants of the given type
+#         """
+#         return typing.cast(OrderedSet[T], self._constants[tp_])
+
+#     def __len__(self):
+#         return sum(len(value) for value in self._constants.values())
 class ConstantPool:
     """A pool of constants for various types."""
 
@@ -50,60 +119,34 @@ class ConstantPool:
             tp_: OrderedSet() for tp_ in typing.get_args(ConstantTypes)
         }
 
+        # Add str explicitly if needed
+        if str not in self._constants:
+            self._constants[str] = OrderedSet()
+
     def add_constant(self, constant: ConstantTypes) -> None:
         """Add new constant value.
 
         Args:
             constant: The constant to add
         """
-        self._constants[type(constant)].add(constant)
+        constant_type = type(constant)
+        if constant_type not in self._constants:
+            # Add the constant type dynamically
+            self._constants[constant_type] = OrderedSet()
+        self._constants[constant_type].add(constant)
 
-    def remove_constant(self, value: ConstantTypes) -> None:
-        """Remove the given constant.
 
-        Args:
-            value: the constant to remove
-        """
-        values = self._constants.get(type(value))
-        assert values is not None
-        values.discard(value)
-
-    def has_constant_for(self, tp_: type[T]) -> bool:
-        """Does this pool have a constant of the given type?
-
-        Args:
-            tp_: The queried type
-
-        Returns:
-            True, if there is a constant
-        """
+    def has_constant_for(self, tp_: type) -> bool:
+        """Check if constants of the given type exist."""
         return len(self._constants[tp_]) > 0
 
-    def get_constant_for(self, tp_: type[T]) -> T:
-        """Get a random value from the constant pool.
-
-        Args:
-            tp_: The type to retrieve
-
-        Returns:
-            A random element of the given type
-        """
-        return typing.cast(T, randomness.choice(tuple(self._constants[tp_])))
-
-    def get_all_constants_for(self, tp_: type[T]) -> OrderedSet[T]:
-        """Get all values from the constant pool.
-
-        Args:
-            tp_: The type to retrieve
-
-        Returns:
-            All constants of the given type
-        """
-        return typing.cast(OrderedSet[T], self._constants[tp_])
+    def get_constant_for(self, tp_: type) -> ConstantTypes:
+        """Retrieve a constant of the given type."""
+        return randomness.choice(list(self._constants[tp_]))
 
     def __len__(self):
-        return sum(len(value) for value in self._constants.values())
-
+        """Get the total number of constants."""
+        return sum(len(values) for values in self._constants.values())
 
 class RestrictedConstantPool(ConstantPool):
     """A constant pool that is restricted in its size.
@@ -293,6 +336,7 @@ def collect_static_constants(project_path: str | os.PathLike) -> ConstantPool:
     """
     collector = _ConstantCollector()
     path = Path(project_path).resolve()
+    logger.debug(f"Collector constants: {collector.constants}")
     for module in _find_modules_with_constants(project_path):
         module_path = path / module
         with module_path.open(mode="r", encoding="utf-8") as module_file:

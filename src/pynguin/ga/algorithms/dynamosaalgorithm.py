@@ -34,6 +34,8 @@ if TYPE_CHECKING:
     from pynguin.testcase.execution import SubjectProperties
 
 
+print("DynaMOSAAlgorithm\n\n")
+
 class DynaMOSAAlgorithm(AbstractMOSAAlgorithm):
     """Implements the Dynamic Many-Objective Sorting Algorithm DynaMOSA."""
 
@@ -43,7 +45,45 @@ class DynaMOSAAlgorithm(AbstractMOSAAlgorithm):
         super().__init__()
         self._goals_manager: _GoalsManager
 
-    def generate_tests(self) -> tsc.TestSuiteChromosome:  # noqa: D102
+    # def generate_tests(self) -> tsc.TestSuiteChromosome:  # noqa: D102
+    #     self.before_search_start()
+    #     self._goals_manager = _GoalsManager(
+    #         self._test_case_fitness_functions,  # type: ignore[arg-type]
+    #         self._archive,
+    #         self.executor.tracer.get_subject_properties(),
+    #     )
+    #     self._number_of_goals = len(self._test_case_fitness_functions)
+    #     stat.set_output_variable_for_runtime_variable(
+    #         RuntimeVariable.Goals, self._number_of_goals
+    #     )
+
+    #     self._population = self._get_random_population()
+    #     self._goals_manager.update(self._population)
+
+    #     # Calculate dominance ranks and crowding distance
+    #     fronts = self._ranking_function.compute_ranking_assignment(
+    #         self._population, self._goals_manager.current_goals
+    #     )
+    #     for i in range(fronts.get_number_of_sub_fronts()):
+    #         fast_epsilon_dominance_assignment(
+    #             fronts.get_sub_front(i), self._goals_manager.current_goals
+    #         )
+
+    #     self.before_first_search_iteration(
+    #         self.create_test_suite(self._archive.solutions)
+    #     )
+    #     while self.resources_left() and len(self._archive.uncovered_goals) > 0:
+    #         self.evolve()
+    #         self.after_search_iteration(self.create_test_suite(self._archive.solutions))
+
+    #     self.after_search_finish()
+    #     return self.create_test_suite(
+    #         self._archive.solutions
+    #         if len(self._archive.solutions) > 0
+    #         else self._get_best_individuals()
+    #     )
+    def generate_tests(self) -> tsc.TestSuiteChromosome:
+        import pandas as pd
         self.before_search_start()
         self._goals_manager = _GoalsManager(
             self._test_case_fitness_functions,  # type: ignore[arg-type]
@@ -55,7 +95,13 @@ class DynaMOSAAlgorithm(AbstractMOSAAlgorithm):
             RuntimeVariable.Goals, self._number_of_goals
         )
 
+        # Generate initial population with DataFrame support
         self._population = self._get_random_population()
+        for individual in self._population:
+            for input_value in individual.inputs:
+                if isinstance(input_value, pd.DataFrame):
+                    self._logger.info("Detected DataFrame input in initial population")
+
         self._goals_manager.update(self._population)
 
         # Calculate dominance ranks and crowding distance
@@ -72,6 +118,13 @@ class DynaMOSAAlgorithm(AbstractMOSAAlgorithm):
         )
         while self.resources_left() and len(self._archive.uncovered_goals) > 0:
             self.evolve()
+
+            # Log DataFrame inputs during evolution
+            for individual in self._population:
+                for input_value in individual.inputs:
+                    if isinstance(input_value, pd.DataFrame):
+                        self._logger.info("Evolved test case with DataFrame input")
+
             self.after_search_iteration(self.create_test_suite(self._archive.solutions))
 
         self.after_search_finish()
@@ -81,6 +134,8 @@ class DynaMOSAAlgorithm(AbstractMOSAAlgorithm):
             else self._get_best_individuals()
         )
 
+    
+    
     def evolve(self) -> None:
         """Runs one evolution step."""
         offspring_population: list[tcc.TestCaseChromosome] = (

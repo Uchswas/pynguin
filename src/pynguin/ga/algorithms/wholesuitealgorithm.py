@@ -38,22 +38,52 @@ class WholeSuiteAlgorithm(GenerationAlgorithm[arch.CoverageArchive]):
         super().__init__()
         self._population: list[tsc.TestSuiteChromosome] = []
 
-    def generate_tests(  # noqa: D102
-        self,
-    ) -> tsc.TestSuiteChromosome:
+    # def generate_tests(  # noqa: D102
+    #     self,
+    # ) -> tsc.TestSuiteChromosome:
+    #     self.before_search_start()
+    #     self._population = self._get_random_population()
+    #     self._update_archive()
+    #     self._sort_population()
+    #     suite = self._get_solution()
+    #     self.before_first_search_iteration(suite)
+    #     while self.resources_left() and suite.get_fitness() != 0.0:
+    #         self.evolve()
+    #         suite = self._get_solution()
+    #         self.after_search_iteration(suite)
+    #     self.after_search_finish()
+    #     return suite
+    def generate_tests(self) -> tsc.TestSuiteChromosome:
+        import pandas as pd
         self.before_search_start()
         self._population = self._get_random_population()
+
+        # Log DataFrame inputs in population
+        for individual in self._population:
+            for input_value in individual.inputs:
+                if isinstance(input_value, pd.DataFrame):
+                    self._logger.info("Detected DataFrame input in population")
+
         self._update_archive()
         self._sort_population()
         suite = self._get_solution()
         self.before_first_search_iteration(suite)
         while self.resources_left() and suite.get_fitness() != 0.0:
             self.evolve()
+
+            # Log DataFrame inputs during evolution
+            for individual in self._population:
+                for input_value in individual.inputs:
+                    if isinstance(input_value, pd.DataFrame):
+                        self._logger.info("Evolved test case with DataFrame input")
+
             suite = self._get_solution()
             self.after_search_iteration(suite)
         self.after_search_finish()
         return suite
 
+    
+    
     def evolve(self) -> None:
         """Evolve the current population and replace it with a new one."""
         new_generation = []

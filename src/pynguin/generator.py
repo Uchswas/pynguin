@@ -26,6 +26,7 @@ import json
 import logging
 import sys
 import threading
+import pandas as pd
 
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -92,6 +93,15 @@ class ReturnCode(enum.IntEnum):
 _LOGGER = logging.getLogger(__name__)
 
 
+def generate_dataframe():
+    """Generate a default pandas DataFrame."""
+    data = {"col1": [1, 2, 3], "col2": [4, 5, 6]}
+    df = pd.DataFrame(data)
+    print(f"Generated DataFrame: {df}")
+    return df
+
+
+
 def set_configuration(configuration: config.Configuration) -> None:
     """Initialises the test generator with the given configuration.
 
@@ -119,15 +129,41 @@ def run_pynguin() -> ReturnCode:
         _LOGGER.info("Stop Pynguin Test Generation…")
 
 
+# def _setup_test_cluster() -> ModuleTestCluster | None:
+#     test_cluster = generate_test_cluster(
+#         config.configuration.module_name,
+#         config.configuration.type_inference.type_inference_strategy,
+#     )
+
+#     if not hasattr(test_cluster, "functions"):
+#         _LOGGER.warning("'functions' attribute is missing in test_cluster")
+
+#     _LOGGER.debug(f"test_cluster attributes: {dir(test_cluster)}")
+
+#     if test_cluster.num_accessible_objects_under_test() == 0:
+#         _LOGGER.error("SUT contains nothing we can test.")
+#         return None
+#     return test_cluster
 def _setup_test_cluster() -> ModuleTestCluster | None:
     test_cluster = generate_test_cluster(
         config.configuration.module_name,
         config.configuration.type_inference.type_inference_strategy,
     )
+
+    if hasattr(test_cluster, "functions"):
+        _LOGGER.debug(f"Functions in test cluster: {test_cluster.functions}")
+        for func in test_cluster.functions:
+            function_name = getattr(func, 'name', 'unknown')
+            function_signature = getattr(func, 'signature', 'unknown')
+            _LOGGER.debug(f"Function: {function_name}, Signature: {function_signature}")
+    else:
+        _LOGGER.warning("'functions' attribute is missing in test_cluster")
+
     if test_cluster.num_accessible_objects_under_test() == 0:
         _LOGGER.error("SUT contains nothing we can test.")
         return None
     return test_cluster
+
 
 
 def _setup_path() -> bool:
@@ -203,23 +239,86 @@ def _setup_random_number_generator() -> None:
     randomness.RNG.seed(config.configuration.seeding.seed)
 
 
-def _setup_constant_seeding() -> (
-    tuple[ConstantProvider, DynamicConstantProvider | None]
-):
+# def _setup_constant_seeding() -> (
+#     tuple[ConstantProvider, DynamicConstantProvider | None]
+# ):
+#     """Collect constants from SUT, if enabled."""
+#     # Use empty provider by default.
+#     wrapped_provider: ConstantProvider = EmptyConstantProvider()
+#     # We need to return the provider used for dynamic values separately,
+#     # because it is later on used to hook up the instrumentation calls.
+#     dynamic_constant_provider: DynamicConstantProvider | None = None
+    
+#     if config.configuration.seeding.constant_seeding:
+#         constant_pool = collect_static_constants(config.configuration.project_path)
+#         # Add default DataFrame to constants
+#         constant_pool.add(generate_dataframe())
+
+
+#     if config.configuration.seeding.constant_seeding:
+#         _LOGGER.info("Collecting static constants from module under test")
+#         constant_pool = collect_static_constants(config.configuration.project_path)
+#         if len(constant_pool) == 0:
+#             _LOGGER.info("No constants found")
+#         else:
+#             _LOGGER.info("Constants found: %s", len(constant_pool))
+#             # Probability of 1.0 -> if a value is requested and available -> return it.
+#             wrapped_provider = DelegatingConstantProvider(
+#                 constant_pool, wrapped_provider, 1.0
+#             )
+
+#     if config.configuration.seeding.dynamic_constant_seeding:
+#         _LOGGER.info("Setting up runtime collection of constants")
+#         dynamic_constant_provider = DynamicConstantProvider(
+#             RestrictedConstantPool(
+#                 max_size=config.configuration.seeding.max_dynamic_pool_size
+#             ),
+#             wrapped_provider,
+#             config.configuration.seeding.seeded_dynamic_values_reuse_probability,
+#             config.configuration.seeding.max_dynamic_length,
+#         )
+#         wrapped_provider = dynamic_constant_provider
+
+#     return wrapped_provider, dynamic_constant_provider
+def _setup_constant_seeding() -> tuple[ConstantProvider, DynamicConstantProvider | None]:
     """Collect constants from SUT, if enabled."""
-    # Use empty provider by default.
     wrapped_provider: ConstantProvider = EmptyConstantProvider()
-    # We need to return the provider used for dynamic values separately,
-    # because it is later on used to hook up the instrumentation calls.
     dynamic_constant_provider: DynamicConstantProvider | None = None
+
     if config.configuration.seeding.constant_seeding:
         _LOGGER.info("Collecting static constants from module under test")
         constant_pool = collect_static_constants(config.configuration.project_path)
+
+        print(f"Type of constant_pool: {type(constant_pool)}")
+        print(f"Contents of constant_pool: {constant_pool}")
+
+        # --- Begin Modifications ---
+        try:
+            # Generate a default pandas DataFrame
+            df_constant = generate_dataframe()
+
+            # Serialize the DataFrame to make it hashable
+            serialized_df = df_constant.to_json()  # Converts DataFrame to JSON string
+
+            # Attempt to add the serialized DataFrame to the constant pool
+            if hasattr(constant_pool, "add"):  # For set-like structures
+                constant_pool.add(serialized_df)
+                _LOGGER.info("Added serialized DataFrame to constant pool")
+            elif isinstance(constant_pool, list):  # For list-like structures
+                constant_pool.append(serialized_df)
+                _LOGGER.info("Appended serialized DataFrame to constant pool")
+            else:
+                _LOGGER.warning("Constant pool does not support adding serialized DataFrame")
+
+            _LOGGER.debug(f"Updated constant pool: {constant_pool}")
+        except Exception as e:
+            _LOGGER.error(f"Failed to add serialized DataFrame constant: {e}")
+        # --- End Modifications ---
+
         if len(constant_pool) == 0:
-            _LOGGER.info("No constants found")
+            _LOGGER.info("No constants found in the pool")
         else:
-            _LOGGER.info("Constants found: %s", len(constant_pool))
-            # Probability of 1.0 -> if a value is requested and available -> return it.
+            _LOGGER.info(f"Constants found: {len(constant_pool)}")
             wrapped_provider = DelegatingConstantProvider(
                 constant_pool, wrapped_provider, 1.0
             )
@@ -237,7 +336,6 @@ def _setup_constant_seeding() -> (
         wrapped_provider = dynamic_constant_provider
 
     return wrapped_provider, dynamic_constant_provider
-
 
 def _setup_and_check() -> (
     tuple[TestCaseExecutor, ModuleTestCluster, ConstantProvider] | None
@@ -511,6 +609,70 @@ def add_additional_metrics(  # noqa: D103
         )
 
 
+# def _run() -> ReturnCode:
+#     if (setup_result := _setup_and_check()) is None:
+#         return ReturnCode.SETUP_FAILED
+#     executor, test_cluster, constant_provider = setup_result
+#     # traces slices for test cases after execution
+#     coverage_metrics = config.configuration.statistics_output.coverage_metrics
+#     if config.CoverageMetric.CHECKED in coverage_metrics:
+#         executor.add_observer(StatementSlicingObserver(executor.tracer))
+
+#     algorithm: GenerationAlgorithm = _instantiate_test_generation_strategy(
+#         executor, test_cluster, constant_provider
+#     )
+#     _LOGGER.info("Start generating test cases")
+#     generation_result = algorithm.generate_tests()
+#     if algorithm.resources_left():
+#         _LOGGER.info("Algorithm stopped before using all resources.")
+#     else:
+#         _LOGGER.info("Stopping condition reached")
+#         for stop in algorithm.stopping_conditions:
+#             _LOGGER.info("%s", stop)
+#     _LOGGER.info("Stop generating test cases")
+
+#     # Executions that happen after this point should not influence the
+#     # search statistics
+#     executor.clear_observers()
+
+#     _track_search_metrics(algorithm, generation_result, coverage_metrics)
+#     _remove_statements_after_exceptions(generation_result)
+#     _generate_assertions(executor, generation_result)
+#     tracked_metrics = _track_final_metrics(
+#         algorithm, executor, generation_result, constant_provider
+#     )
+
+#     # Export the generated test suites
+#     if (
+#         config.configuration.test_case_output.export_strategy
+#         == config.ExportStrategy.PY_TEST
+#     ):
+#         _export_chromosome(generation_result)
+
+#     if config.configuration.statistics_output.create_coverage_report:
+#         coverage_report = get_coverage_report(
+#             generation_result,
+#             executor,
+#             tracked_metrics,
+#         )
+#         render_coverage_report(
+#             coverage_report,
+#             Path(config.configuration.statistics_output.report_dir) / "cov_report.html",
+#             datetime.datetime.now(),  # noqa: DTZ005
+#         )
+#         render_xml_coverage_report(
+#             coverage_report,
+#             Path(config.configuration.statistics_output.report_dir) / "cov_report.xml",
+#             datetime.datetime.now(),  # noqa: DTZ005
+#         )
+#     _collect_miscellaneous_statistics(test_cluster)
+#     if not stat.write_statistics():
+#         _LOGGER.error("Failed to write statistics data")
+#     if generation_result.size() == 0:
+#         # not able to generate one test case
+#         return ReturnCode.NO_TESTS_GENERATED
+#     return ReturnCode.OK
+
 def _run() -> ReturnCode:
     if (setup_result := _setup_and_check()) is None:
         return ReturnCode.SETUP_FAILED
@@ -520,11 +682,25 @@ def _run() -> ReturnCode:
     if config.CoverageMetric.CHECKED in coverage_metrics:
         executor.add_observer(StatementSlicingObserver(executor.tracer))
 
+    # Log functions using DataFrame
+    if hasattr(test_cluster, "functions"):
+        for func in test_cluster.functions:
+            _LOGGER.debug(f"Function attributes: {dir(func)}")
+            if any(param.annotation == pd.DataFrame for param in func.signature.parameters.values()):
+                _LOGGER.info(f"Detected function {func.name} using pandas.DataFrame")
+    else:
+        _LOGGER.warning("test_cluster does not have 'functions' attribute")
+
     algorithm: GenerationAlgorithm = _instantiate_test_generation_strategy(
         executor, test_cluster, constant_provider
     )
     _LOGGER.info("Start generating test cases")
-    generation_result = algorithm.generate_tests()
+    try:
+        generation_result = algorithm.generate_tests()
+    except AttributeError as e:
+        _LOGGER.error(f"Error during test generation: {e}")
+        return ReturnCode.ERROR
+
     if algorithm.resources_left():
         _LOGGER.info("Algorithm stopped before using all resources.")
     else:
@@ -533,9 +709,31 @@ def _run() -> ReturnCode:
             _LOGGER.info("%s", stop)
     _LOGGER.info("Stop generating test cases")
 
-    # Executions that happen after this point should not influence the
-    # search statistics
+    # Executions that happen after this point should not influence the search statistics
     executor.clear_observers()
+
+    # Log generated test cases with DataFrame inputs
+    if hasattr(generation_result, "test_cases"):
+        for test_case in generation_result.test_cases:
+            try:
+                # Retrieve inputs using a fallback mechanism
+                inputs = []
+                if hasattr(test_case, "inputs"):
+                    inputs = test_case.inputs
+                elif hasattr(test_case, "test_case"):
+                    if hasattr(test_case.test_case, "inputs"):
+                        inputs = test_case.test_case.inputs
+                    elif hasattr(test_case.test_case, "get_inputs"):
+                        inputs = test_case.test_case.get_inputs()
+                
+                # Check for pandas DataFrame in inputs
+                if any(isinstance(input_val, pd.DataFrame) for input_val in inputs):
+                    func_name = getattr(test_case, "function", {}).get("name", "unknown")
+                    _LOGGER.info(f"Generated test case for function {func_name} with DataFrame input")
+            except Exception as e:
+                _LOGGER.error(f"Error while processing test_case: {e}")
+    else:
+        _LOGGER.warning("generation_result does not have 'test_cases' attribute")
 
     _track_search_metrics(algorithm, generation_result, coverage_metrics)
     _remove_statements_after_exceptions(generation_result)
@@ -574,6 +772,7 @@ def _run() -> ReturnCode:
         # not able to generate one test case
         return ReturnCode.NO_TESTS_GENERATED
     return ReturnCode.OK
+
 
 
 def _remove_statements_after_exceptions(generation_result):

@@ -297,4 +297,23 @@ class TestCase(ABC):  # noqa: PLR0904
             raise ConstructionFailedException(
                 f"Found no variables of type {parameter_type} at position {position}"
             )
-        return randomness.choice(variables)
+        return randomness.choice(variables)\
+    
+    
+    def get_inputs(self) -> list:
+        """Retrieve inputs for the test case.
+
+        This method collects all variable references created by variable-creating statements.
+
+        Returns:
+            A list of inputs for the test case.
+        """
+        inputs = []
+        for statement in self.statements:
+            if hasattr(statement, "creates_variable") and statement.creates_variable:
+                if hasattr(statement, "get_input"):
+                    inputs.append(statement.get_input())
+                elif hasattr(statement, "ret_val") and statement.ret_val is not None:
+                    inputs.append(statement.ret_val)
+        return inputs
+

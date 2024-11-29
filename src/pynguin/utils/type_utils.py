@@ -12,6 +12,7 @@ import inspect
 import numbers
 import types
 import typing
+import pandas as pd
 
 from inspect import isclass
 from typing import Any
@@ -24,7 +25,7 @@ from pynguin.utils.orderedset import OrderedSet
 if typing.TYPE_CHECKING:
     from pynguin.analyses.typesystem import InferredSignature
 
-PRIMITIVES = OrderedSet([int, str, bytes, bool, float, complex])
+PRIMITIVES = OrderedSet([int, str, bytes, bool, float, complex, pd.DataFrame])
 COLLECTIONS = OrderedSet([list, set, tuple, dict])
 IGNORABLE_TYPES = OrderedSet(["builtins.generator", "builtins.async_generator"])
 
@@ -50,7 +51,19 @@ def is_collection_type(typ: type | None) -> bool:
     Returns:
         Whether the type is a collection type
     """
-    return typ in COLLECTIONS or get_origin(typ) in COLLECTIONS
+    return typ in COLLECTIONS or get_origin(typ) in COLLECTIONS or typ is pd.DataFrame
+
+
+def is_dataframe_type(typ: type | None) -> bool:
+    """Check if the given type is a pandas DataFrame.
+
+    Args:
+        typ: a given type
+
+    Returns:
+        Whether the type is a pandas DataFrame
+    """
+    return typ is pd.DataFrame
 
 
 def is_ignorable_type(typ: type) -> bool:
@@ -216,6 +229,10 @@ def is_assertable(obj: Any, recursion_depth: int = 0) -> bool:
         return False
 
     tp_ = type(obj)
+    
+    if is_enum(tp_) or is_primitive_type(tp_) or is_none_type(tp_) or is_dataframe_type(tp_):
+        return True
+
     if is_enum(tp_) or is_primitive_type(tp_) or is_none_type(tp_):
         return True
     if is_set(tp_) or is_list(tp_) or is_tuple(tp_):
