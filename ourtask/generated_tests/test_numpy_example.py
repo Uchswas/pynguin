@@ -2,10 +2,11 @@
 # Please check them before you use them.
 import pytest
 import numpy_example as module_0
-import pandas.core.computation.expressions as module_1
-import numpy.ma.extras as module_2
-import pandas.io.formats.console as module_3
-import pandas.core.computation.expr as module_4
+import numpy.lib._datasource as module_1
+import platform as module_2
+import numpy.ma.extras as module_3
+import numpy.ma.core as module_4
+import numpy.ma as module_5
 
 
 def test_case_0():
@@ -15,24 +16,26 @@ def test_case_0():
     )
 
 
-@pytest.mark.xfail(strict=True)
 def test_case_1():
+    none_type_0 = None
+    var_0 = module_1._FileOpeners()
+    assert (
+        f"{type(var_0).__module__}.{type(var_0).__qualname__}"
+        == "numpy.lib._datasource._FileOpeners"
+    )
+    var_1 = module_0.dataframe_operations(none_type_0, var_0, var_0)
+
+
+@pytest.mark.xfail(strict=True)
+def test_case_2():
     none_type_0 = None
     var_0 = module_0.dataframe_operations(
         none_type_0, threshold=none_type_0, column=none_type_0
     )
-    var_1 = module_0.dataframe_operations(none_type_0)
-    module_0.dataframe_operations(none_type_0, var_0, var_0)
-
-
-def test_case_2():
-    bool_0 = True
-    list_0 = [bool_0, bool_0]
-    var_0 = module_0.dataframe_operations(list_0, list_0)
-    none_type_0 = None
-    var_1 = module_0.dataframe_operations(
-        none_type_0, threshold=none_type_0, column=none_type_0
-    )
+    none_type_1 = None
+    var_1 = module_0.dataframe_operations(none_type_1, none_type_1)
+    var_2 = module_0.dataframe_operations(var_1, none_type_1)
+    var_2.add_memory_usage_line()
 
 
 def test_case_3():
@@ -43,120 +46,205 @@ def test_case_3():
 @pytest.mark.xfail(strict=True)
 def test_case_4():
     none_type_0 = None
-    list_0 = module_1.get_test_result()
+    var_0 = module_2.machine()
+    assert var_0 == "x86_64"
+    var_1 = module_0.dataframe_operations(none_type_0, threshold=var_0, column=var_0)
+    var_2 = module_0.dataframe_operations(none_type_0)
+    var_3 = module_3.clump_masked(var_1)
     assert (
-        f"{type(module_1.annotations).__module__}.{type(module_1.annotations).__qualname__}"
-        == "__future__._Feature"
+        f"{type(module_3.masked).__module__}.{type(module_3.masked).__qualname__}"
+        == "numpy.ma.core.MaskedConstant"
     )
-    assert module_1.annotations.optional == (3, 7, 0, "beta", 1)
-    assert module_1.annotations.mandatory == (3, 11, 0, "alpha", 0)
-    assert module_1.annotations.compiler_flag == 16777216
-    assert module_1.TYPE_CHECKING is False
-    assert module_1.NUMEXPR_INSTALLED is False
-    assert module_1.USE_NUMEXPR is False
-    var_0 = module_0.dataframe_operations(list_0, column=list_0)
-    var_1 = module_0.dataframe_operations(list_0, none_type_0, list_0)
-    module_0.dataframe_operations(none_type_0, threshold=var_0, column=var_0)
+    assert (
+        f"{type(module_3.nomask).__module__}.{type(module_3.nomask).__qualname__}"
+        == "numpy.bool"
+    )
+    assert (
+        f"{type(module_3.mr_).__module__}.{type(module_3.mr_).__qualname__}"
+        == "numpy.ma.extras.mr_class"
+    )
+    assert len(module_3.mr_) == 0
+    module_0.dataframe_operations(var_2, var_0, var_1, var_2)
 
 
 @pytest.mark.xfail(strict=True)
 def test_case_5():
-    none_type_0 = None
-    var_0 = module_2.clump_masked(none_type_0)
+    bool_0 = True
+    int_0 = 1620
+    list_0 = [int_0, bool_0, bool_0, int_0]
+    var_0 = module_4.fix_invalid(list_0)
     assert (
-        f"{type(module_2.masked).__module__}.{type(module_2.masked).__qualname__}"
-        == "numpy.ma.core.MaskedConstant"
+        f"{type(var_0).__module__}.{type(var_0).__qualname__}" == "numpy.ma.MaskedArray"
     )
+    assert len(var_0) == 4
     assert (
-        f"{type(module_2.nomask).__module__}.{type(module_2.nomask).__qualname__}"
+        f"{type(module_4.nomask).__module__}.{type(module_4.nomask).__qualname__}"
         == "numpy.bool"
     )
     assert (
-        f"{type(module_2.mr_).__module__}.{type(module_2.mr_).__qualname__}"
-        == "numpy.ma.extras.mr_class"
-    )
-    assert len(module_2.mr_) == 0
-    var_1 = module_0.dataframe_operations(var_0, threshold=var_0)
-    var_0.transform()
-
-
-@pytest.mark.xfail(strict=True)
-def test_case_6():
-    none_type_0 = None
-    var_0 = module_3.get_console_size()
-    assert (
-        f"{type(module_3.annotations).__module__}.{type(module_3.annotations).__qualname__}"
-        == "__future__._Feature"
-    )
-    assert module_3.annotations.optional == (3, 7, 0, "beta", 1)
-    assert module_3.annotations.mandatory == (3, 11, 0, "alpha", 0)
-    assert module_3.annotations.compiler_flag == 16777216
-    var_1 = module_0.dataframe_operations(var_0, column=var_0)
-    var_1.interpolate(limit=none_type_0)
-
-
-@pytest.mark.xfail(strict=True)
-def test_case_7():
-    list_0 = module_1.get_test_result()
-    assert (
-        f"{type(module_1.annotations).__module__}.{type(module_1.annotations).__qualname__}"
-        == "__future__._Feature"
-    )
-    assert module_1.annotations.optional == (3, 7, 0, "beta", 1)
-    assert module_1.annotations.mandatory == (3, 11, 0, "alpha", 0)
-    assert module_1.annotations.compiler_flag == 16777216
-    assert module_1.TYPE_CHECKING is False
-    assert module_1.NUMEXPR_INSTALLED is False
-    assert module_1.USE_NUMEXPR is False
-    var_0 = module_0.dataframe_operations(list_0, column=list_0)
-    var_1 = module_0.dataframe_operations(list_0, column=list_0)
-    var_2 = module_0.dataframe_operations(list_0)
-    var_3 = module_0.dataframe_operations(list_0, list_0, column=var_1)
-    var_4 = module_4.add_ops(var_3)
-    assert (
-        f"{type(module_4.annotations).__module__}.{type(module_4.annotations).__qualname__}"
-        == "__future__._Feature"
-    )
-    assert module_4.annotations.optional == (3, 7, 0, "beta", 1)
-    assert module_4.annotations.mandatory == (3, 11, 0, "alpha", 0)
-    assert module_4.annotations.compiler_flag == 16777216
-    assert module_4.ARITH_OPS_SYMS == ("+", "-", "*", "/", "**", "//", "%")
-    assert module_4.BOOL_OPS_SYMS == ("&", "|", "and", "or")
-    assert module_4.CMP_OPS_SYMS == (">", "<", ">=", "<=", "==", "!=", "in", "not in")
-    assert module_4.LOCAL_TAG == "__pd_eval_local_"
-    assert module_4.MATHOPS == (
-        "sin",
-        "cos",
-        "exp",
-        "log",
-        "expm1",
-        "log1p",
-        "sqrt",
-        "sinh",
-        "cosh",
-        "tanh",
-        "arcsin",
-        "arccos",
-        "arctan",
-        "arccosh",
-        "arcsinh",
-        "arctanh",
-        "abs",
-        "log10",
-        "floor",
-        "ceil",
-        "arctan2",
-    )
-    assert module_4.REDUCTIONS == ("sum", "prod", "min", "max")
-    assert module_4.UNARY_OPS_SYMS == ("+", "-", "~", "not")
-    assert (
-        f"{type(module_4.intersection).__module__}.{type(module_4.intersection).__qualname__}"
-        == "builtins.frozenset"
-    )
-    assert len(module_4.intersection) == 0
-    assert (
-        f"{type(module_4.PARSERS).__module__}.{type(module_4.PARSERS).__qualname__}"
+        f"{type(module_4.default_filler).__module__}.{type(module_4.default_filler).__qualname__}"
         == "builtins.dict"
     )
-    assert len(module_4.PARSERS) == 2
-    module_0.dataframe_operations(var_3, var_4, list_0, var_4)
+    assert len(module_4.default_filler) == 35
+    assert module_4.v == "as"
+    assert (
+        f"{type(module_4.scalar_dtype).__module__}.{type(module_4.scalar_dtype).__qualname__}"
+        == "numpy.dtypes.CLongDoubleDType"
+    )
+    assert len(module_4.scalar_dtype) == 0
+    assert module_4.min_val is None
+    assert module_4.max_val is None
+    assert (
+        f"{type(module_4.info).__module__}.{type(module_4.info).__qualname__}"
+        == "numpy.finfo"
+    )
+    assert (
+        f"{type(module_4.info.dtype).__module__}.{type(module_4.info.dtype).__qualname__}"
+        == "numpy.dtypes.LongDoubleDType"
+    )
+    assert len(module_4.info.dtype) == 0
+    assert module_4.info.precision == 18
+    assert module_4.info.iexp == 15
+    assert module_4.info.maxexp == 16384
+    assert module_4.info.minexp == -16382
+    assert module_4.info.negep == -64
+    assert module_4.info.machep == -63
+    assert (
+        f"{type(module_4.info.resolution).__module__}.{type(module_4.info.resolution).__qualname__}"
+        == "numpy.longdouble"
+    )
+    assert (
+        f"{type(module_4.info.epsneg).__module__}.{type(module_4.info.epsneg).__qualname__}"
+        == "numpy.longdouble"
+    )
+    assert (
+        f"{type(module_4.info.smallest_subnormal).__module__}.{type(module_4.info.smallest_subnormal).__qualname__}"
+        == "numpy.longdouble"
+    )
+    assert module_4.info.bits == 128
+    assert (
+        f"{type(module_4.info.max).__module__}.{type(module_4.info.max).__qualname__}"
+        == "numpy.longdouble"
+    )
+    assert (
+        f"{type(module_4.info.min).__module__}.{type(module_4.info.min).__qualname__}"
+        == "numpy.longdouble"
+    )
+    assert (
+        f"{type(module_4.info.eps).__module__}.{type(module_4.info.eps).__qualname__}"
+        == "numpy.longdouble"
+    )
+    assert module_4.info.nexp == 15
+    assert module_4.info.nmant == 63
+    assert (
+        f"{type(module_4.max_filler).__module__}.{type(module_4.max_filler).__qualname__}"
+        == "builtins.dict"
+    )
+    assert len(module_4.max_filler) == 24
+    assert (
+        f"{type(module_4.min_filler).__module__}.{type(module_4.min_filler).__qualname__}"
+        == "builtins.dict"
+    )
+    assert len(module_4.min_filler) == 24
+    assert (
+        f"{type(module_4.ufunc_domain).__module__}.{type(module_4.ufunc_domain).__qualname__}"
+        == "builtins.dict"
+    )
+    assert len(module_4.ufunc_domain) == 47
+    assert (
+        f"{type(module_4.ufunc_fills).__module__}.{type(module_4.ufunc_fills).__qualname__}"
+        == "builtins.dict"
+    )
+    assert len(module_4.ufunc_fills) == 47
+    assert (
+        f"{type(module_4.masked_print_option).__module__}.{type(module_4.masked_print_option).__qualname__}"
+        == "numpy.ma.core._MaskedPrintOption"
+    )
+    assert (
+        f"{type(module_4.masked).__module__}.{type(module_4.masked).__qualname__}"
+        == "numpy.ma.core.MaskedConstant"
+    )
+    assert (
+        f"{type(module_4.masked_singleton).__module__}.{type(module_4.masked_singleton).__qualname__}"
+        == "numpy.ma.core.MaskedConstant"
+    )
+    assert (
+        f"{type(module_5.MaskedArray.dtype).__module__}.{type(module_5.MaskedArray.dtype).__qualname__}"
+        == "builtins.property"
+    )
+    assert (
+        f"{type(module_5.MaskedArray.shape).__module__}.{type(module_5.MaskedArray.shape).__qualname__}"
+        == "builtins.property"
+    )
+    assert (
+        f"{type(module_5.MaskedArray.mask).__module__}.{type(module_5.MaskedArray.mask).__qualname__}"
+        == "builtins.property"
+    )
+    assert (
+        f"{type(module_5.MaskedArray.recordmask).__module__}.{type(module_5.MaskedArray.recordmask).__qualname__}"
+        == "builtins.property"
+    )
+    assert (
+        f"{type(module_5.MaskedArray.hardmask).__module__}.{type(module_5.MaskedArray.hardmask).__qualname__}"
+        == "builtins.property"
+    )
+    assert (
+        f"{type(module_5.MaskedArray.sharedmask).__module__}.{type(module_5.MaskedArray.sharedmask).__qualname__}"
+        == "builtins.property"
+    )
+    assert (
+        f"{type(module_5.MaskedArray.baseclass).__module__}.{type(module_5.MaskedArray.baseclass).__qualname__}"
+        == "builtins.property"
+    )
+    assert (
+        f"{type(module_5.MaskedArray.data).__module__}.{type(module_5.MaskedArray.data).__qualname__}"
+        == "builtins.property"
+    )
+    assert (
+        f"{type(module_5.MaskedArray.flat).__module__}.{type(module_5.MaskedArray.flat).__qualname__}"
+        == "builtins.property"
+    )
+    assert (
+        f"{type(module_5.MaskedArray.fill_value).__module__}.{type(module_5.MaskedArray.fill_value).__qualname__}"
+        == "builtins.property"
+    )
+    assert (
+        f"{type(module_5.MaskedArray.imag).__module__}.{type(module_5.MaskedArray.imag).__qualname__}"
+        == "builtins.property"
+    )
+    assert (
+        f"{type(module_5.MaskedArray.real).__module__}.{type(module_5.MaskedArray.real).__qualname__}"
+        == "builtins.property"
+    )
+    assert (
+        f"{type(module_5.MaskedArray.T).__module__}.{type(module_5.MaskedArray.T).__qualname__}"
+        == "builtins.property"
+    )
+    assert (
+        f"{type(module_5.MaskedArray.mT).__module__}.{type(module_5.MaskedArray.mT).__qualname__}"
+        == "builtins.property"
+    )
+    var_1 = module_0.dataframe_operations(var_0, bool_0, bool_0)
+    assert (
+        f"{type(module_5.masked).__module__}.{type(module_5.masked).__qualname__}"
+        == "numpy.ma.core.MaskedConstant"
+    )
+    assert (
+        f"{type(module_5.masked_print_option).__module__}.{type(module_5.masked_print_option).__qualname__}"
+        == "numpy.ma.core._MaskedPrintOption"
+    )
+    assert (
+        f"{type(module_5.masked_singleton).__module__}.{type(module_5.masked_singleton).__qualname__}"
+        == "numpy.ma.core.MaskedConstant"
+    )
+    assert (
+        f"{type(module_5.nomask).__module__}.{type(module_5.nomask).__qualname__}"
+        == "numpy.bool"
+    )
+    assert (
+        f"{type(module_5.mr_).__module__}.{type(module_5.mr_).__qualname__}"
+        == "numpy.ma.extras.mr_class"
+    )
+    assert len(module_5.mr_) == 0
+    none_type_0 = None
+    bool_0.select_as_multiple(none_type_0, iterator=bool_0)
