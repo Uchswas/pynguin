@@ -14,7 +14,7 @@ This repository demonstrates the usage of the modified Pynguin module to automat
 1. Clone this repository and navigate to its root directory.
 ```bash
   git clone https://github.com/Uchswas/pynguin.git
-  git checkout demo
+  git checkout dataframe_final
   cd pynguin
 ```
 2. Create a virtual environment.
