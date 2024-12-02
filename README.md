@@ -171,11 +171,11 @@ its licence was changed with version 0.30.0.
 
 # Pynguin Test Case Generator for Dataframes
 
-This repository demonstrates the usage of the modified Pynguin module to automatically generate unit tests for Pandas Dataframes. 
+This repository demonstrates the usage of the modified Pynguin module to automatically generate unit tests for Pandas Dataframes and Torch Tensors. 
 
 
 ## Getting Started
-1. Clone this repository and navigate to its root directory.
+1. Clone this repository and switch to the Demo branch. Navigate to the branch's root directory.
 ```bash
   git clone https://github.com/Uchswas/pynguin.git
   git checkout demo
@@ -220,11 +220,12 @@ python run.py
 This will:
 - Execute the modified Pynguin module.
 - Create test files for the functions in numpy_example.py.
+- Create test files for the functions in tensor_example.py.
 
 ## Output
 
 1. Generated Test Files:
-Test files will be stored in the generated_tests/ directory. These files contain unit tests for the functions in numpy_example.py.
+Test files will be stored in the generated_tests/ directory. These files contain unit tests for the functions in numpy_example.py & tensor_example.py.
 
 2. Code Coverage Report
 Code coverage statistics for the generated tests are stored in the reports/statistics.csv file. This file provides metrics on how much of your code is covered by the auto-generated tests.
