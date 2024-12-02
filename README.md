@@ -169,7 +169,7 @@ its licence was changed with version 0.30.0.
 
 
 
-# Pynguin Test Case Generator for Dataframes
+# Pynguin Test Case Generator for Dataframes and Tensors
 
 This repository demonstrates the usage of the modified Pynguin module to automatically generate unit tests for Pandas Dataframes and Torch Tensors. 
 
