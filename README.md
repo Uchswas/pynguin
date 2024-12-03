@@ -24,7 +24,8 @@ This repository demonstrates the usage of the modified Pynguin module to automat
 ```
 3. Install the updated Pynguin module.
 ```bash
-  pip install .
+pip install pandas
+pip install .
 ```
 4. Verify that the correct Pynguin module is installed.
 ```bash
