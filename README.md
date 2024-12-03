@@ -19,7 +19,7 @@ This repository demonstrates the usage of the modified Pynguin module to automat
 ```
 2. Create a virtual environment.
 ```bash
-  python -m venv venv_dataframe
+  python3 -m venv venv_dataframe
   source venv_dataframe/bin/activate
 ```
 3. Install the updated Pynguin module.
